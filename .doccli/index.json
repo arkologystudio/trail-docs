@@ -1,0 +1,91 @@
+{
+  "schema_version": "1",
+  "library": "acme-runtime",
+  "version": "0.0.1-derived",
+  "build": {
+    "tool_version": "0.1.0",
+    "built_at": "2026-02-24T19:19:22.318Z",
+    "source_hash": "sha256:c5639c7304708244d42a17df1e99de5537e41d703b3e7d4a655cefbcfe08ed58"
+  },
+  "docs": [
+    {
+      "doc_id": "bootstrap",
+      "title": "acme-runtime Bootstrap Docs",
+      "source_path": ".doccli/generated-docs/bootstrap.md"
+    }
+  ],
+  "sections": [
+    {
+      "section_id": "sec_8712a321bd81",
+      "doc_id": "bootstrap",
+      "anchor": "acme-runtime-bootstrap-docs",
+      "heading": "acme-runtime Bootstrap Docs",
+      "line_start": 1,
+      "line_end": 5,
+      "text": "This documentation is generated from source code. Confidence: partial (derived/inferred).",
+      "snippet": "This documentation is generated from source code. Confidence: partial (derived/inferred).",
+      "code_blocks": [],
+      "source_path": ".doccli/generated-docs/bootstrap.md"
+    },
+    {
+      "section_id": "sec_85cae218bf66",
+      "doc_id": "bootstrap",
+      "anchor": "summary",
+      "heading": "Summary",
+      "line_start": 6,
+      "line_end": 12,
+      "text": "- Source files scanned: 1 - Symbols detected: 3 - Routes detected: 1 - Environment vars detected: 2",
+      "snippet": "- Source files scanned: 1 - Symbols detected: 3 - Routes detected: 1 - Environment vars detected: 2",
+      "code_blocks": [],
+      "source_path": ".doccli/generated-docs/bootstrap.md"
+    },
+    {
+      "section_id": "sec_1950d109f6d6",
+      "doc_id": "bootstrap",
+      "anchor": "environment-variables",
+      "heading": "Environment Variables",
+      "line_start": 13,
+      "line_end": 17,
+      "text": "- `ACME_API_KEY` - `ACME_WEBHOOK_SECRET`",
+      "snippet": "- `ACME_API_KEY` - `ACME_WEBHOOK_SECRET`",
+      "code_blocks": [],
+      "source_path": ".doccli/generated-docs/bootstrap.md"
+    },
+    {
+      "section_id": "sec_cbfb15fa5ee4",
+      "doc_id": "bootstrap",
+      "anchor": "routes",
+      "heading": "Routes",
+      "line_start": 18,
+      "line_end": 21,
+      "text": "- POST /webhooks/events",
+      "snippet": "- POST /webhooks/events",
+      "code_blocks": [],
+      "source_path": ".doccli/generated-docs/bootstrap.md"
+    },
+    {
+      "section_id": "sec_ce65f10e11e8",
+      "doc_id": "bootstrap",
+      "anchor": "symbols",
+      "heading": "Symbols",
+      "line_start": 22,
+      "line_end": 23,
+      "text": "",
+      "snippet": "Symbols",
+      "code_blocks": [],
+      "source_path": ".doccli/generated-docs/bootstrap.md"
+    },
+    {
+      "section_id": "sec_6b4b3d4f5497",
+      "doc_id": "bootstrap",
+      "anchor": "varfoldersny1mcvd5310m93pbz5n5b7lj3m0000gnttmpondo4dal4uprojectsrcserverts",
+      "heading": "../../../../../../var/folders/ny/1mcvd5310m93pbz5n5b7lj3m0000gn/T/tmp.OnDO4dal4u/project/src/server.ts",
+      "line_start": 24,
+      "line_end": 40,
+      "text": "Functions and classes: - function: `verifySignature(rawBody: string, signature: string, secret: string)` (line 1) - function: `startServer(port: number)` (line 14) - class: `WebhookClient` (line 6) Routes: - POST /webhooks/events Environment variables: - `ACME_API_KEY` - `ACME_WEBHOOK_SECRET`",
+      "snippet": "Functions and classes: - function: `verifySignature(rawBody: string, signature: string, secret: string)` (line 1) - function: `startServer(port: number)` (line 14) - class: `WebhookClient` (line 6) Routes: - POST /web...",
+      "code_blocks": [],
+      "source_path": ".doccli/generated-docs/bootstrap.md"
+    }
+  ]
+}

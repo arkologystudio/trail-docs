@@ -1,0 +1,16 @@
+{
+  "name": "doccli",
+  "version": "0.1.0",
+  "description": "Local-first CLI for agent-friendly documentation navigation",
+  "type": "module",
+  "bin": {
+    "doccli": "./src/cli.mjs"
+  },
+  "scripts": {
+    "build:index": "node ./src/cli.mjs build --src fixtures/docs --library acme-payments --version 2.4.1 --out .doccli/index.json --json",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
