@@ -92,6 +92,31 @@ test("search, open, and cite return expected fields", () => {
   assert.ok(citePayload.citation_id.includes("auth/oauth#refresh-token"));
 });
 
+test("list and stats expose index coverage metadata", () => {
+  const tmpDir = makeTmpDir();
+  setupDocs(tmpDir);
+
+  const build = runCli(
+    ["build", "--src", "docs", "--library", "acme-payments", "--version", "2.4.1", "--json"],
+    tmpDir
+  );
+  assert.equal(build.code, 0);
+
+  const list = runCli(["list", "--json"], tmpDir);
+  assert.equal(list.code, 0);
+  const listPayload = JSON.parse(list.stdout);
+  assert.ok(Array.isArray(listPayload.docs));
+  assert.ok(listPayload.docs.length > 0);
+  assert.ok(typeof listPayload.docs[0].sections === "number");
+
+  const stats = runCli(["stats", "--json"], tmpDir);
+  assert.equal(stats.code, 0);
+  const statsPayload = JSON.parse(stats.stdout);
+  assert.equal(statsPayload.docs_count, 2);
+  assert.ok(statsPayload.sections_count >= 3);
+  assert.ok(typeof statsPayload.sections_per_doc === "number");
+});
+
 test("use resolves package manifest and returns citation-backed steps", () => {
   const tmpDir = makeTmpDir();
   setupDocs(tmpDir);
@@ -131,6 +156,46 @@ test("use resolves package manifest and returns citation-backed steps", () => {
   assert.equal(usePayload.confidence, "authoritative");
   assert.ok(usePayload.steps.length > 0);
   assert.ok(usePayload.steps.every((step) => step.citations.length > 0));
+  assert.ok(usePayload.steps.every((step) => typeof step.confidence === "number"));
+  assert.ok(usePayload.steps.some((step) => typeof step.command === "string" && step.command.length > 0));
+  assert.ok(Array.isArray(usePayload.related_docs));
+});
+
+test("use resolves manifest when --path points at .doccli directory", () => {
+  const tmpDir = makeTmpDir();
+  setupDocs(tmpDir);
+
+  const build = runCli(
+    ["build", "--src", "docs", "--library", "acme-payments", "--version", "2.4.1", "--json"],
+    tmpDir
+  );
+  assert.equal(build.code, 0);
+
+  const manifestPath = path.join(tmpDir, ".doccli", "doccli.json");
+  fs.writeFileSync(
+    manifestPath,
+    JSON.stringify(
+      {
+        schema_version: "1",
+        library: "acme-payments",
+        library_version: "2.4.1",
+        index_path: "index.json",
+        built_at: new Date().toISOString()
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
+
+  const use = runCli(
+    ["use", "acme-payments", "refresh token flow", "--path", ".doccli", "--json"],
+    tmpDir
+  );
+  assert.equal(use.code, 0);
+  const payload = JSON.parse(use.stdout);
+  assert.equal(payload.library, "acme-payments");
+  assert.ok(payload.steps.length > 0);
 });
 
 test("missing reference returns deterministic error code", () => {

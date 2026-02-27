@@ -76,6 +76,49 @@ function citationFor(index, section) {
   };
 }
 
+function buildSnippet(text, tokens, maxChars) {
+  const normalized = String(text || "").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  const lower = normalized.toLowerCase();
+  let firstMatch = -1;
+  for (const token of tokens) {
+    const position = lower.indexOf(token);
+    if (position >= 0 && (firstMatch === -1 || position < firstMatch)) {
+      firstMatch = position;
+    }
+  }
+
+  if (firstMatch === -1) {
+    return truncate(normalized, maxChars);
+  }
+
+  const targetLength = Math.max(80, maxChars);
+  let start = Math.max(0, firstMatch - Math.floor(targetLength / 3));
+  let end = Math.min(normalized.length, start + targetLength);
+
+  if (start > 0) {
+    const previousSpace = normalized.lastIndexOf(" ", start);
+    if (previousSpace > 0) {
+      start = previousSpace + 1;
+    }
+  }
+  if (end < normalized.length) {
+    const nextSpace = normalized.indexOf(" ", end);
+    if (nextSpace > 0) {
+      end = nextSpace;
+    }
+  }
+
+  const window = normalized.slice(start, end).trim();
+  if (window.length <= maxChars) {
+    return window;
+  }
+  return truncate(window, maxChars);
+}
+
 function searchSections(index, query, maxResults, maxChars) {
   const tokens = tokenize(query);
   if (tokens.length === 0) {
@@ -103,7 +146,7 @@ function searchSections(index, query, maxResults, maxChars) {
       doc_id: section.doc_id,
       anchor: section.anchor,
       heading: section.heading,
-      snippet: truncate(section.snippet, Math.min(maxChars, 400)),
+      snippet: buildSnippet(section.text || section.snippet, tokens, Math.min(maxChars, 400)),
       source_path: section.source_path,
       line_start: section.line_start,
       line_end: section.line_end
@@ -123,8 +166,8 @@ function searchSections(index, query, maxResults, maxChars) {
   return ranked.slice(0, maxResults);
 }
 
-function stepInstruction(section) {
-  const cleaned = section.text
+function stepInstruction(section, maxChars = 420) {
+  const cleaned = String(section.text || "")
     .replace(/^#{1,6}\s*/gm, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -133,11 +176,80 @@ function stepInstruction(section) {
     return "";
   }
 
-  const sentences = cleaned.split(/(?<=[.!?])\s+/).filter((value) => value.length > 0);
+  const sentences = cleaned
+    .split(/(?<=[.!?])\s+/)
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+    .filter((value) => !/^\d+\.$/.test(value))
+    .filter((value) => /[a-z]{3}/i.test(value));
+
   if (sentences.length === 0) {
-    return cleaned;
+    return truncate(cleaned, maxChars);
   }
-  return sentences[0];
+
+  let composed = "";
+  for (const sentence of sentences) {
+    const next = composed ? `${composed} ${sentence}` : sentence;
+    if (next.length > maxChars && composed) {
+      break;
+    }
+    composed = next;
+    if (composed.length >= Math.floor(maxChars * 0.8)) {
+      break;
+    }
+  }
+
+  return truncate(composed || sentences[0], maxChars);
+}
+
+function firstSentenceMatch(text, pattern, maxChars = 200) {
+  const sentences = String(text || "")
+    .split(/(?<=[.!?])\s+/)
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  for (const sentence of sentences) {
+    if (pattern.test(sentence)) {
+      return truncate(sentence, maxChars);
+    }
+  }
+
+  return "";
+}
+
+function commandFromSection(section, maxChars = 300) {
+  if (Array.isArray(section.code_blocks) && section.code_blocks.length > 0) {
+    const first = String(section.code_blocks[0] || "").trim();
+    if (first) {
+      return truncate(first, maxChars);
+    }
+  }
+
+  const inlineCodeMatches = String(section.text || "").match(/`([^`]+)`/g) || [];
+  for (const raw of inlineCodeMatches) {
+    const value = raw.slice(1, -1).trim();
+    if (/[./$-]/.test(value) || /\s/.test(value)) {
+      return truncate(value, maxChars);
+    }
+  }
+
+  return "";
+}
+
+function deriveStepHints(section, maxChars = 300) {
+  const command = commandFromSection(section, maxChars);
+  const expected = firstSentenceMatch(
+    section.text,
+    /\b(expect|expected|shows?|returns?|result|output)\b/i,
+    Math.min(maxChars, 220)
+  );
+  const prerequisites = firstSentenceMatch(
+    section.text,
+    /\b(prerequisite|before|must|require|ensure|needs?)\b/i,
+    Math.min(maxChars, 220)
+  );
+
+  return { command, expected, prerequisites };
 }
 
 function readManifest(manifestPath) {
@@ -160,24 +272,41 @@ function readManifest(manifestPath) {
 
 function findManifestForLibrary(library, explicitPath = "") {
   const candidates = [];
+  const pushCandidateSet = (baseDir) => {
+    candidates.push(path.resolve(baseDir, "doccli.json"));
+    candidates.push(path.resolve(baseDir, "manifest.json"));
+    candidates.push(path.resolve(baseDir, ".doccli", "doccli.json"));
+    candidates.push(path.resolve(baseDir, ".doccli", "manifest.json"));
+    candidates.push(path.resolve(baseDir, library, "doccli.json"));
+    candidates.push(path.resolve(baseDir, library, "manifest.json"));
+    candidates.push(path.resolve(baseDir, library, ".doccli", "doccli.json"));
+  };
 
   if (explicitPath) {
-    candidates.push(path.resolve(explicitPath, "doccli.json"));
+    const resolved = path.resolve(explicitPath);
+    if (fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
+      candidates.push(resolved);
+    } else {
+      pushCandidateSet(resolved);
+    }
   }
 
   const envPaths = process.env.DOCCLI_PATHS || "";
   if (envPaths) {
     for (const entry of envPaths.split(path.delimiter)) {
       if (entry.trim()) {
-        candidates.push(path.resolve(entry.trim(), library, "doccli.json"));
-        candidates.push(path.resolve(entry.trim(), "doccli.json"));
+        pushCandidateSet(entry.trim());
       }
     }
   }
 
+  pushCandidateSet(process.cwd());
+
   let current = process.cwd();
   while (true) {
     candidates.push(path.join(current, "node_modules", library, "doccli.json"));
+    candidates.push(path.join(current, "node_modules", library, "manifest.json"));
+    candidates.push(path.join(current, "node_modules", library, ".doccli", "doccli.json"));
     const parent = path.dirname(current);
     if (parent === current) {
       break;
@@ -185,22 +314,67 @@ function findManifestForLibrary(library, explicitPath = "") {
     current = parent;
   }
 
-  for (const candidate of candidates) {
+  const deduped = stableUnique(candidates);
+  for (const candidate of deduped) {
     if (fs.existsSync(candidate)) {
       return candidate;
     }
   }
 
+  const searched = deduped.slice(0, 8).join(", ");
   throw new CliError(
     EXIT_CODES.RESOLUTION_FAILED,
     "RESOLUTION_FAILED",
-    `Could not locate docs manifest for library ${library}`,
-    "Install docs artifact, set DOCCLI_PATHS, or pass --path"
+    `Could not locate docs manifest for library ${library}. Checked: ${searched}${deduped.length > 8 ? ", ..." : ""}`,
+    "Install docs artifact, emit doccli.json, set DOCCLI_PATHS, or pass --path"
   );
 }
 
 function resolveIndexForCommand(flags) {
   return flags.index ? path.resolve(String(flags.index)) : path.resolve(".doccli/index.json");
+}
+
+export function runList(flags) {
+  const index = loadIndex(resolveIndexForCommand(flags));
+  const sectionCounts = new Map();
+  for (const section of index.sections) {
+    sectionCounts.set(section.doc_id, (sectionCounts.get(section.doc_id) || 0) + 1);
+  }
+
+  const docs = index.docs
+    .map((doc) => ({
+      doc_id: doc.doc_id,
+      title: doc.title,
+      source_path: doc.source_path,
+      sections: sectionCounts.get(doc.doc_id) || 0
+    }))
+    .sort((left, right) => left.doc_id.localeCompare(right.doc_id));
+
+  return {
+    library: index.library,
+    version: index.version,
+    docs
+  };
+}
+
+export function runStats(flags) {
+  const index = loadIndex(resolveIndexForCommand(flags));
+  let codeBlockCount = 0;
+  for (const section of index.sections) {
+    codeBlockCount += Array.isArray(section.code_blocks) ? section.code_blocks.length : 0;
+  }
+
+  const docsCount = index.docs.length || 1;
+  return {
+    library: index.library,
+    version: index.version,
+    docs_count: index.docs.length,
+    sections_count: index.sections.length,
+    code_blocks_count: codeBlockCount,
+    sections_per_doc: Number((index.sections.length / docsCount).toFixed(2)),
+    built_at: index.build?.built_at || "",
+    source_hash: index.build?.source_hash || ""
+  };
 }
 
 export function runBuild(flags) {
@@ -368,31 +542,50 @@ export function runUse(positionals, flags) {
       confidence: "partial",
       steps: [],
       snippet: "",
-      citations: []
+      citations: [],
+      related_docs: []
     };
   }
 
   const steps = [];
   const citations = [];
+  const relatedDocs = [];
   let snippet = "";
+  const topScore = searchResults[0]?.score || 1;
 
   for (let indexValue = 0; indexValue < searchResults.length; indexValue += 1) {
     const result = searchResults[indexValue];
     const section = selectSection(index, `${result.doc_id}#${result.anchor}`);
     const citation = citationFor(index, section);
     const instruction = stepInstruction(section);
+    const hints = deriveStepHints(section, maxChars);
     if (!instruction) {
       continue;
     }
-    steps.push({
+    const step = {
       id: `step_${steps.length + 1}`,
       instruction,
+      confidence: Number(Math.max(0.1, Math.min(1, result.score / topScore)).toFixed(2)),
       citations: [citation.citation_id]
-    });
+    };
+    if (hints.command) {
+      step.command = hints.command;
+    }
+    if (hints.expected) {
+      step.expected = hints.expected;
+    }
+    if (hints.prerequisites) {
+      step.prerequisites = hints.prerequisites;
+    }
+    steps.push(step);
     citations.push(citation.citation_id);
 
     if (!snippet && section.code_blocks.length > 0) {
       snippet = truncate(section.code_blocks[0], maxChars);
+    }
+
+    if (!relatedDocs.includes(section.doc_id)) {
+      relatedDocs.push(section.doc_id);
     }
   }
 
@@ -404,7 +597,8 @@ export function runUse(positionals, flags) {
       confidence: "partial",
       steps: [],
       snippet: "",
-      citations: []
+      citations: [],
+      related_docs: []
     };
   }
 
@@ -415,6 +609,7 @@ export function runUse(positionals, flags) {
     confidence: "authoritative",
     steps,
     snippet,
-    citations: stableUnique(citations)
+    citations: stableUnique(citations),
+    related_docs: relatedDocs.slice(0, 3)
   };
 }
