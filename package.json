@@ -1,6 +1,6 @@
 {
   "name": "@arkology.studio/doccli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local-first CLI for agent-friendly documentation navigation and pre-install library research",
   "type": "module",
   "bin": {
