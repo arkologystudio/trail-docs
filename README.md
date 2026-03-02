@@ -2,11 +2,11 @@
 
 Natural language documentation retrieval for AI agents – via CLI!
 
-`doc-nav` turns markdown docs into a searchable, citation-backed knowledge base and now supports pre-install research for external libraries.
+`trail-docs` turns markdown docs into a searchable, citation-backed knowledge base and now supports pre-install research for external libraries.
 
-`doc-nav`'s purpose is to improve codebase comprehension and navitation for agents – ultimately making it easier, faster and cheaper to use software libraries. 
+`trail-docs`'s purpose is to improve codebase comprehension and navitation for agents – ultimately making it easier, faster and cheaper to use software libraries. 
 
-`doc-nav` was designed primarily _for_ agents, although it can be used by human developers as well.
+`trail-docs` was designed primarily _for_ agents, although it can be used by human developers as well.
 
 
 ## Why DocCLI
@@ -16,7 +16,7 @@ AI agents typically either:
 1. Read too many files (high token cost), or
 2. Use brittle grep loops (high latency, weak traceability).
 
-`doc-nav` provides:
+`trail-docs` provides:
 
 1. Fast local retrieval from an index.
 2. Deterministic JSON output.
@@ -26,7 +26,7 @@ AI agents typically either:
 ## Install
 
 ```bash
-npm install -g doc-nav
+npm install -g trail-docs
 ```
 
 ## Core Workflows
@@ -34,11 +34,11 @@ npm install -g doc-nav
 ### 1) Local docs workflow (existing project docs)
 
 ```bash
-doc-nav build --src . --library "MyProject" --version "1.0.0" --out .doc-nav/index.json
+trail-docs build --src . --library "MyProject" --version "1.0.0" --out .trail-docs/index.json
 
-echo '{"schema_version":"1","library":"MyProject","library_version":"1.0.0","index_path":"index.json"}' > .doc-nav/doc-nav.json
+echo '{"schema_version":"1","library":"MyProject","library_version":"1.0.0","index_path":"index.json"}' > .trail-docs/trail-docs.json
 
-doc-nav use "MyProject" "How do I deploy to production?" --path .doc-nav
+trail-docs use "MyProject" "How do I deploy to production?" --path .trail-docs
 ```
 
 ### 2) Pre-install research workflow (unknown library)
@@ -46,38 +46,38 @@ doc-nav use "MyProject" "How do I deploy to production?" --path .doc-nav
 ```bash
 # Discover candidates
 # (providers: all|catalog|npm|github)
-doc-nav discover "axios" --provider npm --max-results 5 --json
+trail-docs discover "axios" --provider npm --max-results 5 --json
 
 # Fetch docs snapshot and pin source ref
-doc-nav fetch "npm:axios" --json
+trail-docs fetch "npm:axios" --json
 
 # Build index from fetched docs with provenance
 # (using the fetch output paths)
-doc-nav build \
-  --src .doc-nav/cache/sources/<snapshot>/docs \
+trail-docs build \
+  --src .trail-docs/cache/sources/<snapshot>/docs \
   --library "axios" \
   --version "1.13.6" \
-  --source-manifest .doc-nav/cache/sources/<snapshot>/.doc-nav/source.json \
-  --out .doc-nav/index.json
+  --source-manifest .trail-docs/cache/sources/<snapshot>/.trail-docs/source.json \
+  --out .trail-docs/index.json
 
 # One-shot alternative (discover/fetch/build/manifest):
-doc-nav prep "axios" --path .doc-nav --json
+trail-docs prep "axios" --path .trail-docs --json
 
 # One-shot URL ingestion:
-doc-nav index "https://raw.githubusercontent.com/axios/axios/v1.x/README.md" --path .doc-nav --json
+trail-docs index "https://raw.githubusercontent.com/axios/axios/v1.x/README.md" --path .trail-docs --json
 ```
 
 ### 3) API surface + callable guidance workflow
 
 ```bash
 # Extract exported API + signatures
-doc-nav surface npm:openai --json
+trail-docs surface npm:openai --json
 
 # Look up a concrete callable
-doc-nav fn "npm:openai#OpenAI.complete" --json
+trail-docs fn "npm:openai#OpenAI.complete" --json
 
 # Route a task across multiple candidate libraries
-doc-nav use "extract structured data from text" --libs npm:openai,npm:transformers --json
+trail-docs use "extract structured data from text" --libs npm:openai,npm:transformers --json
 ```
 
 ## Commands
@@ -98,24 +98,24 @@ doc-nav use "extract structured data from text" --libs npm:openai,npm:transforme
 | `cite` | Emit canonical citation |
 | `use` | Task-based steps with citations |
 
-## Project Config (`doc-nav.toml`)
+## Project Config (`trail-docs.toml`)
 
 Optional project defaults:
 
 ```toml
 library = "MyProject"
-index_path = ".doc-nav/index.json"
-manifest_path = ".doc-nav"
+index_path = ".trail-docs/index.json"
+manifest_path = ".trail-docs"
 output = "json"
 
 [trust]
-policy = "doc-nav.policy.json"
+policy = "trail-docs.policy.json"
 
 [federation]
-indexes = [".doc-nav/index.json", "../plugin/.doc-nav/index.json"]
+indexes = [".trail-docs/index.json", "../plugin/.trail-docs/index.json"]
 ```
 
-Run `doc-nav --help` for full flags.
+Run `trail-docs --help` for full flags.
 
 ## JSON Output
 
@@ -159,7 +159,7 @@ Full schema: [docs/json_output_schema.md](./docs/json_output_schema.md)
 
 Fetched documentation is treated as untrusted input.
 
-`fetch` supports policy controls via `doc-nav.policy.json`:
+`fetch` supports policy controls via `trail-docs.policy.json`:
 
 ```json
 {
@@ -181,11 +181,11 @@ The source manifest stores:
 
 ## Performance Notes
 
-`doc-nav` is optimized for deterministic local retrieval.
+`trail-docs` is optimized for deterministic local retrieval.
 
 1. Build once, query many.
 2. Use `--json` for agent integrations.
-3. For repeated external research, reuse cached snapshots from `.doc-nav/cache/sources`.
+3. For repeated external research, reuse cached snapshots from `.trail-docs/cache/sources`.
 
 ## Testing
 
@@ -197,9 +197,9 @@ Current suite covers deterministic builds, retrieval commands, manifest resoluti
 
 ## Documentation
 
-1. [Quick Start](./docs/doc-nav-quick-start.md)
-2. [Agent Integration](./docs/doc-nav-agent-integration.md)
-3. [Best Practices](./docs/doc-nav-best-practices.md)
+1. [Quick Start](./docs/trail-docs-quick-start.md)
+2. [Agent Integration](./docs/trail-docs-agent-integration.md)
+3. [Best Practices](./docs/trail-docs-best-practices.md)
 4. [JSON Output Schema](./docs/json_output_schema.md)
 5. [V1 Publishing Plan](./docs/v1_publishing_plan.md)
 

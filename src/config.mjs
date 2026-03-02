@@ -5,7 +5,7 @@ import toml from "toml";
 export function findConfigPath(startDir = process.cwd()) {
   let current = path.resolve(startDir);
   while (true) {
-    const candidate = path.join(current, "doc-nav.toml");
+    const candidate = path.join(current, "trail-docs.toml");
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
       return candidate;
     }

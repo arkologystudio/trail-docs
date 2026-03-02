@@ -1,10 +1,10 @@
 {
-  "name": "doc-nav",
+  "name": "trail-docs",
   "version": "0.2.0",
   "description": "Local-first CLI for agent-friendly documentation navigation and pre-install library research",
   "type": "module",
   "bin": {
-    "doc-nav": "src/cli.mjs"
+    "trail-docs": "src/cli.mjs"
   },
   "files": [
     "src",
@@ -14,7 +14,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build:index": "node ./src/cli.mjs build --src fixtures/docs --library acme-payments --version 2.4.1 --out .doc-nav/index.json --json",
+    "build:index": "node ./src/cli.mjs build --src fixtures/docs --library acme-payments --version 2.4.1 --out .trail-docs/index.json --json",
     "test": "node --test",
     "prepublishOnly": "npm test"
   },
@@ -25,7 +25,7 @@
   "engines": {
     "node": ">=20"
   },
-  "author": "doc-nav",
+  "author": "trail-docs",
   "license": "MIT",
   "keywords": [
     "cli",

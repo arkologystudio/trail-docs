@@ -55,7 +55,7 @@ async function resolveSurfaceSource(selector, flags = {}) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing selector for surface",
-      "Usage: doc-nav surface <selector>"
+      "Usage: trail-docs surface <selector>"
     );
   }
 
@@ -202,7 +202,7 @@ export async function buildSurfaceForSelector(selector, flags = {}) {
   const resolved = await resolveSurfaceSource(selector, flags);
   const cacheRoot = flags["cache-dir"]
     ? path.resolve(String(flags["cache-dir"]))
-    : path.resolve(".doc-nav", "cache", "surfaces");
+    : path.resolve(".trail-docs", "cache", "surfaces");
   const cacheFile = surfaceCachePath(selector, resolved.source.resolved_ref, resolved.source.canonical_url, cacheRoot);
   const maxExamples = toNumber(flags.examples, DEFAULTS.surfaceMaxExamples);
   const maxResults = toNumber(flags["max-results"], DEFAULTS.surfaceMaxSymbols);

@@ -157,7 +157,7 @@ export function loadIndex(indexPath) {
         EXIT_CODES.SCHEMA_MISMATCH,
         "SCHEMA_MISMATCH",
         `Invalid index schema in ${indexPath}`,
-        "Re-run doc-nav build"
+        "Re-run trail-docs build"
       );
     }
     return parsed;
@@ -169,7 +169,7 @@ export function loadIndex(indexPath) {
       EXIT_CODES.INDEX_UNREADABLE,
       "INDEX_UNREADABLE",
       `Could not read index file: ${indexPath}`,
-      "Run doc-nav build or verify index path"
+      "Run trail-docs build or verify index path"
     );
   }
 }

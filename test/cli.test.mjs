@@ -12,7 +12,7 @@ const FIXTURE_CODEBASE = path.join(REPO_ROOT, "fixtures", "codebase");
 const FIXTURE_PACKAGES = path.join(REPO_ROOT, "fixtures", "packages");
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "doc-nav-test-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "trail-docs-test-"));
 }
 
 function runCli(args, cwd) {
@@ -136,17 +136,17 @@ test("use resolves package manifest and returns citation-backed steps", () => {
   assert.equal(build.code, 0);
 
   const packageRoot = path.join(tmpDir, "node_modules", "acme-payments");
-  const indexDir = path.join(packageRoot, ".doc-nav");
+  const indexDir = path.join(packageRoot, ".trail-docs");
   fs.mkdirSync(indexDir, { recursive: true });
-  fs.copyFileSync(path.join(tmpDir, ".doc-nav", "index.json"), path.join(indexDir, "index.json"));
+  fs.copyFileSync(path.join(tmpDir, ".trail-docs", "index.json"), path.join(indexDir, "index.json"));
   fs.writeFileSync(
-    path.join(packageRoot, "doc-nav.json"),
+    path.join(packageRoot, "trail-docs.json"),
     JSON.stringify(
       {
         schema_version: "1",
         library: "acme-payments",
         library_version: "2.4.1",
-        index_path: ".doc-nav/index.json",
+        index_path: ".trail-docs/index.json",
         built_at: new Date().toISOString()
       },
       null,
@@ -169,7 +169,7 @@ test("use resolves package manifest and returns citation-backed steps", () => {
   assert.ok(Array.isArray(usePayload.related_docs));
 });
 
-test("use resolves manifest when --path points at .doc-nav directory", () => {
+test("use resolves manifest when --path points at .trail-docs directory", () => {
   const tmpDir = makeTmpDir();
   setupDocs(tmpDir);
 
@@ -179,7 +179,7 @@ test("use resolves manifest when --path points at .doc-nav directory", () => {
   );
   assert.equal(build.code, 0);
 
-  const manifestPath = path.join(tmpDir, ".doc-nav", "doc-nav.json");
+  const manifestPath = path.join(tmpDir, ".trail-docs", "trail-docs.json");
   fs.writeFileSync(
     manifestPath,
     JSON.stringify(
@@ -197,7 +197,7 @@ test("use resolves manifest when --path points at .doc-nav directory", () => {
   );
 
   const use = runCli(
-    ["use", "acme-payments", "refresh token flow", "--path", ".doc-nav", "--json"],
+    ["use", "acme-payments", "refresh token flow", "--path", ".trail-docs", "--json"],
     tmpDir
   );
   assert.equal(use.code, 0);
@@ -262,9 +262,9 @@ test("bootstrap generates docs and searchable index from codebase", () => {
   assert.equal(bootstrapPayload.confidence, "partial");
   assert.ok(bootstrapPayload.source_files_scanned >= 1);
   assert.ok(bootstrapPayload.signals_detected >= 1);
-  assert.ok(fs.existsSync(path.join(tmpDir, ".doc-nav", "generated-docs", "bootstrap.md")));
-  assert.ok(fs.existsSync(path.join(tmpDir, ".doc-nav", "index.json")));
-  const generated = fs.readFileSync(path.join(tmpDir, ".doc-nav", "generated-docs", "bootstrap.md"), "utf8");
+  assert.ok(fs.existsSync(path.join(tmpDir, ".trail-docs", "generated-docs", "bootstrap.md")));
+  assert.ok(fs.existsSync(path.join(tmpDir, ".trail-docs", "index.json")));
+  const generated = fs.readFileSync(path.join(tmpDir, ".trail-docs", "generated-docs", "bootstrap.md"), "utf8");
   assert.ok(generated.includes("`ACME_WEBHOOK_SECRET` (project/src/server.ts:19)"));
   assert.ok(generated.includes("script: `npm run start`"));
   assert.equal(generated.includes("SHOULD_NOT_APPEAR"), false);
@@ -303,12 +303,12 @@ test("bootstrap emit-manifest enables immediate use resolution", () => {
   assert.equal(bootstrap.code, 0);
   const bootstrapPayload = JSON.parse(bootstrap.stdout);
   assert.ok(bootstrapPayload.manifest_path);
-  assert.ok(fs.existsSync(path.join(tmpDir, "doc-nav.json")));
+  assert.ok(fs.existsSync(path.join(tmpDir, "trail-docs.json")));
 
-  const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, "doc-nav.json"), "utf8"));
+  const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, "trail-docs.json"), "utf8"));
   assert.equal(manifest.library, "acme-runtime");
   assert.equal(manifest.library_version, "0.0.1-derived");
-  assert.ok(manifest.index_path.endsWith(".doc-nav/index.json"));
+  assert.ok(manifest.index_path.endsWith(".trail-docs/index.json"));
 
   const use = runCli(["use", "acme-runtime", "webhook signature validation", "--path", tmpDir, "--json"], tmpDir);
   assert.equal(use.code, 0);
@@ -459,7 +459,7 @@ test("end-to-end preinstall flow discover fetch build use with provenance", () =
   assert.equal(build.code, 0);
 
   fs.writeFileSync(
-    path.join(tmpDir, ".doc-nav", "doc-nav.json"),
+    path.join(tmpDir, ".trail-docs", "trail-docs.json"),
     JSON.stringify(
       {
         schema_version: "1",
@@ -475,7 +475,7 @@ test("end-to-end preinstall flow discover fetch build use with provenance", () =
   );
 
   const use = runCli(
-    ["use", "external-acme-lib", "configure webhook", "--path", ".doc-nav", "--json"],
+    ["use", "external-acme-lib", "configure webhook", "--path", ".trail-docs", "--json"],
     tmpDir
   );
   assert.equal(use.code, 0);
@@ -616,18 +616,18 @@ test("prep performs one-shot fetch build manifest from local docs source", () =>
     "utf8"
   );
 
-  const prep = runCli(["prep", sourceDir, "--path", ".doc-nav", "--json"], tmpDir);
+  const prep = runCli(["prep", sourceDir, "--path", ".trail-docs", "--json"], tmpDir);
   assert.equal(prep.code, 0);
   const payload = JSON.parse(prep.stdout);
   assert.equal(payload.ok, true);
-  assert.ok(fs.existsSync(path.join(tmpDir, ".doc-nav", "index.json")));
-  assert.ok(fs.existsSync(path.join(tmpDir, ".doc-nav", "doc-nav.json")));
+  assert.ok(fs.existsSync(path.join(tmpDir, ".trail-docs", "index.json")));
+  assert.ok(fs.existsSync(path.join(tmpDir, ".trail-docs", "trail-docs.json")));
 
-  const indexAlias = runCli(["index", sourceDir, "--path", ".doc-nav-alt", "--json"], tmpDir);
+  const indexAlias = runCli(["index", sourceDir, "--path", ".trail-docs-alt", "--json"], tmpDir);
   assert.equal(indexAlias.code, 0);
   const aliasPayload = JSON.parse(indexAlias.stdout);
   assert.equal(aliasPayload.ok, true);
-  assert.ok(fs.existsSync(path.join(tmpDir, ".doc-nav-alt", "doc-nav.json")));
+  assert.ok(fs.existsSync(path.join(tmpDir, ".trail-docs-alt", "trail-docs.json")));
 });
 
 test("use auto-heals by preparing missing manifest when selector is provided", () => {
@@ -648,26 +648,26 @@ test("use auto-heals by preparing missing manifest when selector is provided", (
     "utf8"
   );
 
-  const use = runCli(["use", sourceDir, "configure", "--path", ".doc-nav", "--json"], tmpDir);
+  const use = runCli(["use", sourceDir, "configure", "--path", ".trail-docs", "--json"], tmpDir);
   assert.equal(use.code, 0);
   const payload = JSON.parse(use.stdout);
   assert.ok(Array.isArray(payload.steps));
   assert.ok(payload.steps.length > 0);
-  assert.ok(fs.existsSync(path.join(tmpDir, ".doc-nav", "doc-nav.json")));
+  assert.ok(fs.existsSync(path.join(tmpDir, ".trail-docs", "trail-docs.json")));
 });
 
-test("config defaults from doc-nav.toml apply to search and use", () => {
+test("config defaults from trail-docs.toml apply to search and use", () => {
   const tmpDir = makeTmpDir();
   setupDocs(tmpDir);
 
   const build = runCli(
-    ["build", "--src", "docs", "--library", "acme-payments", "--version", "2.4.1", "--out", ".doc-nav/index.json", "--json"],
+    ["build", "--src", "docs", "--library", "acme-payments", "--version", "2.4.1", "--out", ".trail-docs/index.json", "--json"],
     tmpDir
   );
   assert.equal(build.code, 0);
 
   fs.writeFileSync(
-    path.join(tmpDir, ".doc-nav", "doc-nav.json"),
+    path.join(tmpDir, ".trail-docs", "trail-docs.json"),
     JSON.stringify(
       {
         schema_version: "1",
@@ -683,11 +683,11 @@ test("config defaults from doc-nav.toml apply to search and use", () => {
   );
 
   fs.writeFileSync(
-    path.join(tmpDir, "doc-nav.toml"),
+    path.join(tmpDir, "trail-docs.toml"),
     [
       "library = \"acme-payments\"",
-      "index_path = \".doc-nav/index.json\"",
-      "manifest_path = \".doc-nav\"",
+      "index_path = \".trail-docs/index.json\"",
+      "manifest_path = \".trail-docs\"",
       "output = \"json\""
     ].join("\n"),
     "utf8"
@@ -710,18 +710,18 @@ test("federated search and use query across multiple indexes", () => {
   setupDocs(tmpDir);
 
   const indexA = runCli(
-    ["build", "--src", "docs", "--library", "acme-core", "--version", "1.0.0", "--out", ".doc-nav/core.json", "--json"],
+    ["build", "--src", "docs", "--library", "acme-core", "--version", "1.0.0", "--out", ".trail-docs/core.json", "--json"],
     tmpDir
   );
   assert.equal(indexA.code, 0);
   const indexB = runCli(
-    ["build", "--src", "docs", "--library", "acme-plugin", "--version", "1.0.0", "--out", ".doc-nav/plugin.json", "--json"],
+    ["build", "--src", "docs", "--library", "acme-plugin", "--version", "1.0.0", "--out", ".trail-docs/plugin.json", "--json"],
     tmpDir
   );
   assert.equal(indexB.code, 0);
 
   const federatedSearch = runCli(
-    ["search", "refresh token", "--indexes", ".doc-nav/core.json,.doc-nav/plugin.json", "--json"],
+    ["search", "refresh token", "--indexes", ".trail-docs/core.json,.trail-docs/plugin.json", "--json"],
     tmpDir
   );
   assert.equal(federatedSearch.code, 0);
@@ -731,7 +731,7 @@ test("federated search and use query across multiple indexes", () => {
   assert.ok(searchPayload.results.some((entry) => entry.library === "acme-plugin"));
 
   const federatedUse = runCli(
-    ["use", "webhook signature verification", "--indexes", ".doc-nav/core.json,.doc-nav/plugin.json", "--json"],
+    ["use", "webhook signature verification", "--indexes", ".trail-docs/core.json,.trail-docs/plugin.json", "--json"],
     tmpDir
   );
   assert.equal(federatedUse.code, 0);

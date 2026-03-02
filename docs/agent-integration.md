@@ -1,12 +1,12 @@
 # DocCLI Agent Integration Guide
 
-How to integrate doc-nav into AI agent systems for intelligent documentation retrieval.
+How to integrate trail-docs into AI agent systems for intelligent documentation retrieval.
 
 ## Overview
 
-doc-nav is designed specifically for AI agents. This guide shows you how to integrate it into your agent workflows for efficient, citation-backed documentation access.
+trail-docs is designed specifically for AI agents. This guide shows you how to integrate it into your agent workflows for efficient, citation-backed documentation access.
 
-## Why doc-nav for Agents?
+## Why trail-docs for Agents?
 
 ### Traditional Approach Problems
 - 📂 Reading entire doc directories is token-expensive
@@ -14,7 +14,7 @@ doc-nav is designed specifically for AI agents. This guide shows you how to inte
 - 📝 No structured way to cite sources
 - 🎯 Hard to get actionable steps from raw documentation
 
-### doc-nav Solution
+### trail-docs Solution
 - ✅ Pre-indexed, fast search (no file I/O spam)
 - ✅ Natural language queries with citation-backed answers
 - ✅ Confidence scores guide next actions
@@ -32,16 +32,16 @@ doc-nav is designed specifically for AI agents. This guide shows you how to inte
          │ Shell command or API wrapper
          │
 ┌────────▼────────┐
-│     doc-nav      │
+│     trail-docs      │
 │  (CLI process)  │
 └────────┬────────┘
          │
          │ Reads from
          │
 ┌────────▼────────┐
-│ .doc-nav/        │
+│ .trail-docs/        │
 │  index.json     │
-│  doc-nav.json    │
+│  trail-docs.json    │
 └─────────────────┘
 ```
 
@@ -49,10 +49,10 @@ doc-nav is designed specifically for AI agents. This guide shows you how to inte
 
 For unknown libraries, add an acquisition phase before query:
 
-1. `doc-nav discover "<library>" ...`
-2. `doc-nav fetch "<selector>" ...`
-3. `doc-nav build --source-manifest ...`
-4. `doc-nav use ...`
+1. `trail-docs discover "<library>" ...`
+2. `trail-docs fetch "<selector>" ...`
+3. `trail-docs build --source-manifest ...`
+4. `trail-docs use ...`
 
 This keeps citations tied to pinned external refs (`resolved_ref`) and preserves provenance in JSON outputs.
 
@@ -71,7 +71,7 @@ def discover_documentation(project_path):
 
     # Get index statistics
     result = subprocess.run(
-        ['doc-nav', 'stats', '--json'],
+        ['trail-docs', 'stats', '--json'],
         cwd=project_path,
         capture_output=True,
         text=True
@@ -90,7 +90,7 @@ def discover_documentation(project_path):
 stats = discover_documentation('/path/to/project')
 if stats['docs_count'] > 0:
     print(f"📚 Found {stats['docs_count']} documentation files")
-    # Proceed with doc-nav-based lookup
+    # Proceed with trail-docs-based lookup
 else:
     print("⚠️  No documentation index found, falling back to file search")
 ```
@@ -105,8 +105,8 @@ def query_documentation(library, task, project_path):
 
     result = subprocess.run(
         [
-            'doc-nav', 'use', library, task,
-            '--path', f'{project_path}/.doc-nav',
+            'trail-docs', 'use', library, task,
+            '--path', f'{project_path}/.trail-docs',
             '--max-results', '5',
             '--json'
         ],
@@ -183,7 +183,7 @@ def iterative_lookup(library, initial_task, project_path):
         # Try keyword search instead
         keywords = extract_keywords(initial_task)
         search_result = subprocess.run(
-            ['doc-nav', 'search', keywords, '--json'],
+            ['trail-docs', 'search', keywords, '--json'],
             cwd=project_path,
             capture_output=True,
             text=True
@@ -195,7 +195,7 @@ def iterative_lookup(library, initial_task, project_path):
         if results['results']:
             top_doc = results['results'][0]
             doc_content = subprocess.run(
-                ['doc-nav', 'open', f"{top_doc['doc_id']}#{top_doc['anchor']}", '--json'],
+                ['trail-docs', 'open', f"{top_doc['doc_id']}#{top_doc['anchor']}", '--json'],
                 cwd=project_path,
                 capture_output=True,
                 text=True
@@ -234,7 +234,7 @@ def explore_related(library, initial_task, project_path, max_depth=2):
 
                 # Open related doc
                 doc_result = subprocess.run(
-                    ['doc-nav', 'open', doc_id, '--json'],
+                    ['trail-docs', 'open', doc_id, '--json'],
                     cwd=project_path,
                     capture_output=True,
                     text=True
@@ -298,8 +298,8 @@ class DocCLITool:
         """Natural language query"""
         result = subprocess.run(
             [
-                'doc-nav', 'use', self.library_name, task,
-                '--path', f'{self.project_path}/.doc-nav',
+                'trail-docs', 'use', self.library_name, task,
+                '--path', f'{self.project_path}/.trail-docs',
                 '--json'
             ],
             capture_output=True,
@@ -311,7 +311,7 @@ class DocCLITool:
     def search(self, keywords):
         """Keyword search"""
         result = subprocess.run(
-            ['doc-nav', 'search', keywords, '--json'],
+            ['trail-docs', 'search', keywords, '--json'],
             cwd=self.project_path,
             capture_output=True,
             text=True,
@@ -322,7 +322,7 @@ class DocCLITool:
     def get_doc(self, doc_id):
         """Get full document content"""
         result = subprocess.run(
-            ['doc-nav', 'open', doc_id, '--json'],
+            ['trail-docs', 'open', doc_id, '--json'],
             cwd=self.project_path,
             capture_output=True,
             text=True,
@@ -347,7 +347,7 @@ for step in response['steps']:
 ### Example 2: MCP Server Tool Integration
 
 ```typescript
-// MCP server exposing doc-nav as a tool
+// MCP server exposing trail-docs as a tool
 import { McpServer } from '@modelcontextprotocol/sdk';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -355,7 +355,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 const server = new McpServer({
-  name: 'doc-nav-mcp-server',
+  name: 'trail-docs-mcp-server',
   version: '1.0.0'
 });
 
@@ -368,7 +368,7 @@ server.tool('query-docs', {
   },
   handler: async ({ library, task, max_results }) => {
     const { stdout } = await execAsync(
-      `doc-nav use "${library}" "${task}" --path .doc-nav --max-results ${max_results} --json`
+      `trail-docs use "${library}" "${task}" --path .trail-docs --max-results ${max_results} --json`
     );
 
     const response = JSON.parse(stdout);
@@ -395,7 +395,7 @@ server.tool('search-docs', {
   },
   handler: async ({ query, max_results }) => {
     const { stdout } = await execAsync(
-      `doc-nav search "${query}" --max-results ${max_results} --json`
+      `trail-docs search "${query}" --max-results ${max_results} --json`
     );
 
     const response = JSON.parse(stdout);
@@ -416,7 +416,7 @@ server.tool('search-docs', {
 
 ```python
 class AutonomousAgent:
-    """Agent that uses doc-nav for self-guided task execution"""
+    """Agent that uses trail-docs for self-guided task execution"""
 
     def __init__(self, project_path, library_name):
         self.docs = DocCLITool(project_path, library_name)
@@ -508,7 +508,7 @@ class AutonomousAgent:
 def ensure_fresh_index(project_path, max_age_hours=24):
     """Rebuild index if stale"""
     stats_result = subprocess.run(
-        ['doc-nav', 'stats', '--json'],
+        ['trail-docs', 'stats', '--json'],
         cwd=project_path,
         capture_output=True,
         text=True
@@ -588,23 +588,23 @@ def safe_query(library, task, project_path, fallback=None):
     """Query with error handling"""
     try:
         result = subprocess.run(
-            ['doc-nav', 'use', library, task, '--path', f'{project_path}/.doc-nav', '--json'],
+            ['trail-docs', 'use', library, task, '--path', f'{project_path}/.trail-docs', '--json'],
             capture_output=True,
             text=True,
             timeout=10
         )
 
         if result.returncode != 0:
-            print(f"⚠️  doc-nav error: {result.stderr}")
+            print(f"⚠️  trail-docs error: {result.stderr}")
             return fallback
 
         return json.loads(result.stdout)
 
     except subprocess.TimeoutExpired:
-        print("⚠️  doc-nav query timed out")
+        print("⚠️  trail-docs query timed out")
         return fallback
     except json.JSONDecodeError:
-        print("⚠️  Invalid JSON response from doc-nav")
+        print("⚠️  Invalid JSON response from trail-docs")
         return fallback
     except Exception as e:
         print(f"⚠️  Unexpected error: {e}")
@@ -629,8 +629,8 @@ def safe_query(library, task, project_path, fallback=None):
 ## Testing Your Integration
 
 ```python
-def test_doc-nav_integration():
-    """Test suite for doc-nav integration"""
+def test_trail-docs_integration():
+    """Test suite for trail-docs integration"""
 
     project_path = '/path/to/test/project'
     library = 'TestProject'
@@ -641,7 +641,7 @@ def test_doc-nav_integration():
 
     # Test 2: Search returns results
     search_result = subprocess.run(
-        ['doc-nav', 'search', 'test', '--json'],
+        ['trail-docs', 'search', 'test', '--json'],
         cwd=project_path,
         capture_output=True,
         text=True
@@ -664,11 +664,11 @@ def test_doc-nav_integration():
 
 ## Troubleshooting Integration Issues
 
-### Issue: "Command not found: doc-nav"
+### Issue: "Command not found: trail-docs"
 
-**Solution:** Ensure doc-nav is in PATH or use absolute path:
+**Solution:** Ensure trail-docs is in PATH or use absolute path:
 ```python
-DOCCLI_PATH = '/usr/local/bin/doc-nav'  # or full path
+DOCCLI_PATH = '/usr/local/bin/trail-docs'  # or full path
 subprocess.run([DOCCLI_PATH, 'stats', ...])
 ```
 
@@ -692,6 +692,6 @@ subprocess.run([...], timeout=10)  # 10 second timeout
 
 ## Next Steps
 
-- See [Quick Start Guide](./doc-nav-quick-start.md) for basic usage
-- See [Best Practices](./doc-nav-best-practices.md) for optimization tips
+- See [Quick Start Guide](./trail-docs-quick-start.md) for basic usage
+- See [Best Practices](./trail-docs-best-practices.md) for optimization tips
 - Check [JSON Output Schema](./json_output_schema.md) for response formats

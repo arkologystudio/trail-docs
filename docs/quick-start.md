@@ -1,17 +1,17 @@
 # DocCLI Quick Start Guide
 
-Get started with doc-nav in 5 minutes.
+Get started with trail-docs in 5 minutes.
 
-## What is doc-nav?
+## What is trail-docs?
 
-doc-nav is a documentation indexing and retrieval CLI designed for AI agents. It creates searchable indexes of markdown documentation and provides natural language query capabilities with citation-backed answers.
+trail-docs is a documentation indexing and retrieval CLI designed for AI agents. It creates searchable indexes of markdown documentation and provides natural language query capabilities with citation-backed answers.
 
 ## Installation
 
 ```bash
-npm install -g doc-nav
+npm install -g trail-docs
 # or use directly with npx
-npx doc-nav --help
+npx trail-docs --help
 ```
 
 ## Quick Start Workflow
@@ -23,18 +23,18 @@ Navigate to your project directory and build an index:
 ```bash
 cd /path/to/your/project
 
-doc-nav build \
+trail-docs build \
   --src . \
   --library "YourProjectName" \
   --version "1.0.0" \
-  --out .doc-nav/index.json
+  --out .trail-docs/index.json
 ```
 
 This scans all markdown files in your project and creates a searchable index.
 
 **Output:**
 ```
-Built index: .doc-nav/index.json
+Built index: .trail-docs/index.json
 Docs: 35, sections: 229
 Source hash: sha256:abc123...
 ```
@@ -49,7 +49,7 @@ echo '{
   "library": "YourProjectName",
   "library_version": "1.0.0",
   "index_path": "index.json"
-}' > .doc-nav/doc-nav.json
+}' > .trail-docs/trail-docs.json
 ```
 
 ### Step 3: Explore Your Documentation
@@ -58,7 +58,7 @@ echo '{
 
 ```bash
 # Summary statistics
-doc-nav stats
+trail-docs stats
 
 # Output:
 # YourProjectName@1.0.0
@@ -68,13 +68,13 @@ doc-nav stats
 # Built at: 2026-02-27T08:00:00.000Z
 
 # List all documents
-doc-nav list | head -20
+trail-docs list | head -20
 ```
 
 #### Search for topics:
 
 ```bash
-doc-nav search "authentication" --max-results 5
+trail-docs search "authentication" --max-results 5
 
 # Output:
 # Results for "authentication" in YourProjectName@1.0.0:
@@ -86,7 +86,7 @@ doc-nav search "authentication" --max-results 5
 #### Open a specific document section:
 
 ```bash
-doc-nav open "docs/auth-guide#oauth-setup"
+trail-docs open "docs/auth-guide#oauth-setup"
 
 # Output:
 # docs/auth-guide#oauth-setup (docs/auth-guide.md:45)
@@ -99,7 +99,7 @@ doc-nav open "docs/auth-guide#oauth-setup"
 #### Get a citation:
 
 ```bash
-doc-nav cite "docs/auth-guide#oauth-setup"
+trail-docs cite "docs/auth-guide#oauth-setup"
 
 # Output:
 # YourProjectName@1.0.0:docs/auth-guide#oauth-setup:45-67
@@ -111,8 +111,8 @@ doc-nav cite "docs/auth-guide#oauth-setup"
 Ask natural language questions and get citation-backed steps:
 
 ```bash
-doc-nav use "YourProjectName" "How do I set up authentication?" \
-  --path .doc-nav \
+trail-docs use "YourProjectName" "How do I set up authentication?" \
+  --path .trail-docs \
   --max-results 5
 
 # Output:
@@ -136,13 +136,13 @@ Use this workflow when the library is not installed locally and you want to rese
 ### Step A: Discover candidate libraries
 
 ```bash
-doc-nav discover "axios" --provider npm --max-results 5 --json
+trail-docs discover "axios" --provider npm --max-results 5 --json
 ```
 
 ### Step B: Fetch and pin docs snapshot
 
 ```bash
-doc-nav fetch "npm:axios" --json
+trail-docs fetch "npm:axios" --json
 ```
 
 The fetch response includes:
@@ -153,15 +153,15 @@ The fetch response includes:
 ### Step C: Build index from fetched docs with provenance
 
 ```bash
-doc-nav build \
+trail-docs build \
   --src /path/to/fetched/docs \
   --library "axios" \
   --version "1.13.6" \
-  --source-manifest /path/to/.doc-nav/source.json \
-  --out .doc-nav/index.json
+  --source-manifest /path/to/.trail-docs/source.json \
+  --out .trail-docs/index.json
 ```
 
-Then create `.doc-nav/doc-nav.json` and use normal `search/open/cite/use`.
+Then create `.trail-docs/trail-docs.json` and use normal `search/open/cite/use`.
 
 ## Common Workflows
 
@@ -169,41 +169,41 @@ Then create `.doc-nav/doc-nav.json` and use normal `search/open/cite/use`.
 
 ```bash
 # 1. What's available?
-doc-nav stats
+trail-docs stats
 
 # 2. Find relevant docs
-doc-nav search "deployment"
+trail-docs search "deployment"
 
 # 3. Read the doc
-doc-nav open "docs/deployment-guide"
+trail-docs open "docs/deployment-guide"
 
 # 4. Get citation for reference
-doc-nav cite "docs/deployment-guide#production"
+trail-docs cite "docs/deployment-guide#production"
 ```
 
 ### AI Agent Integration
 
 ```bash
 # 1. Understand the corpus
-doc-nav stats --json | jq '.docs_count'
+trail-docs stats --json | jq '.docs_count'
 
 # 2. Natural language query
-doc-nav use "MyProject" "How do I deploy to production?" \
+trail-docs use "MyProject" "How do I deploy to production?" \
   --path . --json | jq '.steps[0].instruction'
 
 # 3. Follow related docs
-doc-nav open "docs/deployment-guide" --json | jq '.content'
+trail-docs open "docs/deployment-guide" --json | jq '.content'
 ```
 
 ### Continuous Documentation
 
 ```bash
 # Update your docs, rebuild index
-doc-nav build --src . --library "MyProject" --version "1.0.1" --out .doc-nav/index.json
+trail-docs build --src . --library "MyProject" --version "1.0.1" --out .trail-docs/index.json
 
 # Update manifest version
-jq '.library_version = "1.0.1"' .doc-nav/doc-nav.json > .doc-nav/doc-nav.json.tmp
-mv .doc-nav/doc-nav.json.tmp .doc-nav/doc-nav.json
+jq '.library_version = "1.0.1"' .trail-docs/trail-docs.json > .trail-docs/trail-docs.json.tmp
+mv .trail-docs/trail-docs.json.tmp .trail-docs/trail-docs.json
 ```
 
 ## Command Reference
@@ -212,22 +212,22 @@ mv .doc-nav/doc-nav.json.tmp .doc-nav/doc-nav.json
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| `build` | Create searchable index | `doc-nav build --src . --library "Foo" --version "1.0.0"` |
-| `list` | Show all indexed docs | `doc-nav list` |
-| `stats` | Show index statistics | `doc-nav stats` |
-| `search` | Keyword/phrase search | `doc-nav search "backup"` |
-| `open` | View document section | `doc-nav open "readme#installation"` |
-| `cite` | Get citation string | `doc-nav cite "readme#features"` |
-| `use` | Task-based query | `doc-nav use "Foo" "How do I...?"` |
-| `discover` | Find external docs/library candidates | `doc-nav discover "express" --provider npm` |
-| `fetch` | Snapshot external docs with pinned ref | `doc-nav fetch "npm:express"` |
+| `build` | Create searchable index | `trail-docs build --src . --library "Foo" --version "1.0.0"` |
+| `list` | Show all indexed docs | `trail-docs list` |
+| `stats` | Show index statistics | `trail-docs stats` |
+| `search` | Keyword/phrase search | `trail-docs search "backup"` |
+| `open` | View document section | `trail-docs open "readme#installation"` |
+| `cite` | Get citation string | `trail-docs cite "readme#features"` |
+| `use` | Task-based query | `trail-docs use "Foo" "How do I...?"` |
+| `discover` | Find external docs/library candidates | `trail-docs discover "express" --provider npm` |
+| `fetch` | Snapshot external docs with pinned ref | `trail-docs fetch "npm:express"` |
 
 ### Common Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--json` | Output as JSON | Human-readable |
-| `--index <file>` | Index file path | `.doc-nav/index.json` |
+| `--index <file>` | Index file path | `.trail-docs/index.json` |
 | `--path <dir>` | Manifest search path | current dir + node_modules |
 | `--max-results <n>` | Limit results | 5 (`search`/`discover`), 3 (`use`) |
 | `--max-chars <n>` | Limit content length | 2000 |
@@ -239,13 +239,13 @@ All commands support `--json` for programmatic use:
 
 ```bash
 # Structured search results
-doc-nav search "api" --json | jq '.results[] | {heading, score}'
+trail-docs search "api" --json | jq '.results[] | {heading, score}'
 
 # Task steps with confidence
-doc-nav use "Foo" "How to deploy?" --json | jq '.steps[] | {confidence, instruction}'
+trail-docs use "Foo" "How to deploy?" --json | jq '.steps[] | {confidence, instruction}'
 
 # Index statistics
-doc-nav stats --json | jq '{docs: .docs_count, sections: .sections_count}'
+trail-docs stats --json | jq '{docs: .docs_count, sections: .sections_count}'
 ```
 
 See [json_output_schema.md](./json_output_schema.md) for complete schemas.
@@ -257,19 +257,19 @@ See [json_output_schema.md](./json_output_schema.md) for complete schemas.
 The index can be regenerated, so keep it out of version control:
 
 ```bash
-echo ".doc-nav/index.json" >> .gitignore
+echo ".trail-docs/index.json" >> .gitignore
 ```
 
 Keep the manifest in version control:
 ```bash
-git add .doc-nav/doc-nav.json
+git add .trail-docs/trail-docs.json
 ```
 
 ### 2. Use Relative Paths in CI
 
 ```bash
 # In CI, use relative paths
-doc-nav build --src . --library "$PROJECT_NAME" --version "$VERSION"
+trail-docs build --src . --library "$PROJECT_NAME" --version "$VERSION"
 ```
 
 ### 3. Search Before Use
@@ -278,18 +278,18 @@ The `use` command is powerful but can be overkill for simple lookups:
 
 ```bash
 # Simple lookup: use search
-doc-nav search "configuration"
+trail-docs search "configuration"
 
 # Complex task: use use
-doc-nav use "MyProject" "How do I configure authentication with OAuth?"
+trail-docs use "MyProject" "How do I configure authentication with OAuth?"
 ```
 
 ### 4. Chain Commands
 
 ```bash
 # Find doc, then open it
-DOC_ID=$(doc-nav search "deploy" --json | jq -r '.results[0].doc_id')
-doc-nav open "$DOC_ID"
+DOC_ID=$(trail-docs search "deploy" --json | jq -r '.results[0].doc_id')
+trail-docs open "$DOC_ID"
 ```
 
 ### 5. Related Docs Are Gold
@@ -297,7 +297,7 @@ doc-nav open "$DOC_ID"
 The `use` command returns related docs - follow them for deeper understanding:
 
 ```bash
-doc-nav use "Foo" "How do I backup?" --json | jq -r '.related_docs[]'
+trail-docs use "Foo" "How do I backup?" --json | jq -r '.related_docs[]'
 # Output: docs/backup-guide, docs/restore-guide, readme
 ```
 
@@ -312,11 +312,11 @@ RESOLUTION_FAILED: Could not locate docs manifest for library MyProject
 
 **Solution:**
 ```bash
-# Ensure doc-nav.json exists
-ls .doc-nav/doc-nav.json
+# Ensure trail-docs.json exists
+ls .trail-docs/trail-docs.json
 
 # Or create it:
-echo '{"schema_version":"1","library":"MyProject","library_version":"1.0.0","index_path":"index.json"}' > .doc-nav/doc-nav.json
+echo '{"schema_version":"1","library":"MyProject","library_version":"1.0.0","index_path":"index.json"}' > .trail-docs/trail-docs.json
 ```
 
 ### "No section found for doc_id"
@@ -329,26 +329,26 @@ REF_NOT_FOUND: No section found for my-doc#my-section
 **Solution:**
 ```bash
 # List available docs to find the correct ID
-doc-nav list | grep "my-doc"
+trail-docs list | grep "my-doc"
 
 # Or search for the topic
-doc-nav search "my topic"
+trail-docs search "my topic"
 ```
 
 ### Empty Search Results
 
 ```bash
 # Check what's indexed
-doc-nav stats
+trail-docs stats
 
 # Rebuild if needed
-doc-nav build --src . --library "MyProject" --version "1.0.0"
+trail-docs build --src . --library "MyProject" --version "1.0.0"
 ```
 
 ## Next Steps
 
-- Read the [Agent Integration Guide](./doc-nav-agent-integration.md) for AI agent workflows
-- Read [Best Practices](./doc-nav-best-practices.md) for optimization tips
+- Read the [Agent Integration Guide](./trail-docs-agent-integration.md) for AI agent workflows
+- Read [Best Practices](./trail-docs-best-practices.md) for optimization tips
 - Check [JSON Output Schema](./json_output_schema.md) for programmatic integration
 
 ## Examples
@@ -357,16 +357,16 @@ doc-nav build --src . --library "MyProject" --version "1.0.0"
 
 ```bash
 # Morning: check what changed
-doc-nav stats
+trail-docs stats
 
 # Find deployment docs
-doc-nav search "production deploy" --max-results 3
+trail-docs search "production deploy" --max-results 3
 
 # Read the guide
-doc-nav open "docs/deployment#production"
+trail-docs open "docs/deployment#production"
 
 # Share citation with team
-doc-nav cite "docs/deployment#production"
+trail-docs cite "docs/deployment#production"
 # Copy: MyProject@1.0.0:docs/deployment#production:45-67
 ```
 
@@ -376,7 +376,7 @@ doc-nav cite "docs/deployment#production"
 # Agent receives task: "Deploy to production"
 
 # 1. Find relevant docs
-doc-nav use "MyProject" "How do I deploy to production?" --path .doc-nav --json
+trail-docs use "MyProject" "How do I deploy to production?" --path .trail-docs --json
 
 # 2. Extract high-confidence steps
 # {
@@ -387,7 +387,7 @@ doc-nav use "MyProject" "How do I deploy to production?" --path .doc-nav --json
 # }
 
 # 3. Follow related docs for details
-doc-nav open "docs/deployment-guide" --json
+trail-docs open "docs/deployment-guide" --json
 ```
 
 ### Example 3: Documentation as Code
@@ -401,10 +401,10 @@ set -e
 VERSION=$(cat VERSION)
 
 # Rebuild docs index
-doc-nav build --src . --library "MyProject" --version "$VERSION" --out .doc-nav/index.json
+trail-docs build --src . --library "MyProject" --version "$VERSION" --out .trail-docs/index.json
 
 # Update manifest
-cat > .doc-nav/doc-nav.json <<EOF
+cat > .trail-docs/trail-docs.json <<EOF
 {
   "schema_version": "1",
   "library": "MyProject",
@@ -414,13 +414,13 @@ cat > .doc-nav/doc-nav.json <<EOF
 EOF
 
 # Validate index
-doc-nav stats --json | jq -e '.docs_count > 0'
+trail-docs stats --json | jq -e '.docs_count > 0'
 
 echo "Documentation index built successfully"
 ```
 
 ## Support
 
-- Documentation: [GitHub Repo](https://github.com/your-org/doc-nav)
-- Issues: [GitHub Issues](https://github.com/your-org/doc-nav/issues)
+- Documentation: [GitHub Repo](https://github.com/your-org/trail-docs)
+- Issues: [GitHub Issues](https://github.com/your-org/trail-docs/issues)
 - Schema Reference: [json_output_schema.md](./json_output_schema.md)

@@ -1,6 +1,6 @@
 # DocCLI Best Practices
 
-Optimization tips and decision guide for using doc-nav effectively.
+Optimization tips and decision guide for using trail-docs effectively.
 
 ## When to Use Which Command
 
@@ -10,24 +10,24 @@ Optimization tips and decision guide for using doc-nav effectively.
 Need documentation info?
 │
 ├─ Library not installed yet?
-│  └─> doc-nav discover "<library>" → doc-nav fetch "<selector>" → doc-nav build --source-manifest ...
+│  └─> trail-docs discover "<library>" → trail-docs fetch "<selector>" → trail-docs build --source-manifest ...
 │
 ├─ Want to know what's available?
-│  └─> doc-nav stats / doc-nav list
+│  └─> trail-docs stats / trail-docs list
 │
 ├─ Have specific question/task?
 │  │
 │  ├─ Simple topic lookup? (e.g., "authentication")
-│  │  └─> doc-nav search "authentication"
+│  │  └─> trail-docs search "authentication"
 │  │
 │  └─ Complex task? (e.g., "How do I deploy with rollback?")
-│     └─> doc-nav use "MyProject" "How do I deploy with rollback?"
+│     └─> trail-docs use "MyProject" "How do I deploy with rollback?"
 │
 ├─ Know exact doc location?
-│  └─> doc-nav open "docs/guide#section"
+│  └─> trail-docs open "docs/guide#section"
 │
 └─ Need citation for reference?
-   └─> doc-nav cite "docs/guide#section"
+   └─> trail-docs cite "docs/guide#section"
 ```
 
 ### Command Selection Guide
@@ -49,22 +49,22 @@ Need documentation info?
 ✅ **Simple keyword lookup**
 ```bash
 # ✓ Good use of search
-doc-nav search "configuration"
-doc-nav search "API endpoints"
-doc-nav search "error codes"
+trail-docs search "configuration"
+trail-docs search "API endpoints"
+trail-docs search "error codes"
 ```
 
 ✅ **Exploring unfamiliar codebase**
 ```bash
 # First, see what's there
-doc-nav search "architecture"
-doc-nav search "getting started"
+trail-docs search "architecture"
+trail-docs search "getting started"
 ```
 
 ✅ **Finding specific term occurrences**
 ```bash
 # Find all mentions of a concept
-doc-nav search "rate limiting"
+trail-docs search "rate limiting"
 ```
 
 ### Use `use` when:
@@ -72,21 +72,21 @@ doc-nav search "rate limiting"
 ✅ **Task-oriented questions**
 ```bash
 # ✓ Good use of 'use'
-doc-nav use "MyProject" "How do I deploy to production?"
-doc-nav use "MyProject" "What are the backup procedures?"
-doc-nav use "MyProject" "How do I troubleshoot connection errors?"
+trail-docs use "MyProject" "How do I deploy to production?"
+trail-docs use "MyProject" "What are the backup procedures?"
+trail-docs use "MyProject" "How do I troubleshoot connection errors?"
 ```
 
 ✅ **Need actionable steps**
 ```bash
 # When you want citation-backed instructions
-doc-nav use "MyProject" "How do I configure SSL certificates?"
+trail-docs use "MyProject" "How do I configure SSL certificates?"
 ```
 
 ✅ **Want related context**
 ```bash
 # 'use' returns related_docs for exploration
-doc-nav use "MyProject" "How does authentication work?"
+trail-docs use "MyProject" "How does authentication work?"
 # Returns related: docs/auth-guide, docs/security, docs/api-reference
 ```
 
@@ -95,19 +95,19 @@ doc-nav use "MyProject" "How does authentication work?"
 ❌ **Don't use `use` for simple lookups**
 ```bash
 # ✗ Bad: overkill for simple lookup
-doc-nav use "MyProject" "config file"
+trail-docs use "MyProject" "config file"
 
 # ✓ Better: use search
-doc-nav search "config file"
+trail-docs search "config file"
 ```
 
 ❌ **Don't use `search` for complex questions**
 ```bash
 # ✗ Bad: won't get actionable answer
-doc-nav search "how to deploy with zero downtime and rollback capability"
+trail-docs search "how to deploy with zero downtime and rollback capability"
 
 # ✓ Better: use 'use'
-doc-nav use "MyProject" "How do I deploy with zero downtime and rollback?"
+trail-docs use "MyProject" "How do I deploy with zero downtime and rollback?"
 ```
 
 ## Agent Workflow Patterns
@@ -118,12 +118,12 @@ doc-nav use "MyProject" "How do I deploy with zero downtime and rollback?"
 
 ```python
 # Step 1: Discover (once per session)
-stats = run_cmd('doc-nav stats --json')
+stats = run_cmd('trail-docs stats --json')
 if stats['docs_count'] == 0:
     fallback_to_file_search()
 
 # Step 2: Query
-response = run_cmd('doc-nav use "Project" "task description" --json')
+response = run_cmd('trail-docs use "Project" "task description" --json')
 
 # Step 3: Execute based on confidence
 for step in response['steps']:
@@ -141,12 +141,12 @@ for step in response['steps']:
 
 ```python
 # Step 1: Broad search
-results = run_cmd('doc-nav search "deployment" --json')
+results = run_cmd('trail-docs search "deployment" --json')
 
 # Step 2: Open top results
 docs = []
 for result in results['results'][:3]:
-    doc = run_cmd(f'doc-nav open "{result["doc_id"]}" --json')
+    doc = run_cmd(f'trail-docs open "{result["doc_id"]}" --json')
     docs.append(doc)
 
 # Step 3: Synthesize information
@@ -159,13 +159,13 @@ for result in results['results'][:3]:
 
 ```python
 # Step 1: Initial query
-response = run_cmd('doc-nav use "Project" "authentication flow" --json')
+response = run_cmd('trail-docs use "Project" "authentication flow" --json')
 
 # Step 2: Check confidence
 if response['confidence'] == 'partial':
     # Step 3: Explore related docs
     for doc_id in response['related_docs']:
-        doc = run_cmd(f'doc-nav open "{doc_id}" --json')
+        doc = run_cmd(f'trail-docs open "{doc_id}" --json')
         # Build knowledge graph
 ```
 
@@ -186,20 +186,20 @@ if response['confidence'] == 'partial':
 
 ```bash
 # ✗ Slow: using 'use' just to check if docs exist
-doc-nav use "MyProject" "what is available" --json
+trail-docs use "MyProject" "what is available" --json
 
 # ✓ Fast: use stats
-doc-nav stats --json
+trail-docs stats --json
 ```
 
 ### 2. Limit Result Sets
 
 ```bash
 # Faster: limit results
-doc-nav search "deploy" --max-results 3
+trail-docs search "deploy" --max-results 3
 
 # Slower: default (10 results)
-doc-nav search "deploy"
+trail-docs search "deploy"
 ```
 
 ### 3. Cache Repeated Queries
@@ -224,11 +224,11 @@ result2 = cached_query("MyProject", "How to deploy?")
 
 ```bash
 # Slower: parse human-readable output
-output=$(doc-nav search "test")
+output=$(trail-docs search "test")
 # Parse text output...
 
 # Faster: use JSON
-output=$(doc-nav search "test" --json)
+output=$(trail-docs search "test" --json)
 # Parse JSON (structured, predictable)
 ```
 
@@ -236,14 +236,14 @@ output=$(doc-nav search "test" --json)
 
 ```bash
 # ✗ Inefficient: multiple separate calls
-doc-nav search "backup" --json
-doc-nav search "restore" --json
-doc-nav search "recovery" --json
+trail-docs search "backup" --json
+trail-docs search "restore" --json
+trail-docs search "recovery" --json
 
 # ✓ Better: combined query
-doc-nav search "backup restore recovery" --json
+trail-docs search "backup restore recovery" --json
 # Or use 'use' for related concepts:
-doc-nav use "MyProject" "backup and restore procedures" --json
+trail-docs use "MyProject" "backup and restore procedures" --json
 ```
 
 ## Confidence Score Interpretation
@@ -374,12 +374,12 @@ def execute_with_audit_trail(step):
 1. **After documentation changes**
    ```bash
    # In git hooks or CI
-   doc-nav build --src . --library "MyProject" --version "$(cat VERSION)"
+   trail-docs build --src . --library "MyProject" --version "$(cat VERSION)"
    ```
 
 2. **When stats show staleness**
    ```python
-   stats = run_cmd('doc-nav stats --json')
+   stats = run_cmd('trail-docs stats --json')
    built_at = datetime.fromisoformat(stats['built_at'])
    age_hours = (datetime.now(timezone.utc) - built_at).total_seconds() / 3600
 
@@ -391,7 +391,7 @@ def execute_with_audit_trail(step):
    ```bash
    # On release
    NEW_VERSION="1.1.0"
-   doc-nav build --src . --library "MyProject" --version "$NEW_VERSION"
+   trail-docs build --src . --library "MyProject" --version "$NEW_VERSION"
    ```
 
 ### Index Size Considerations
@@ -409,7 +409,7 @@ def execute_with_audit_trail(step):
 
 ```bash
 # Full rebuild (simple, always works)
-doc-nav build --src . --library "MyProject" --version "1.0.0"
+trail-docs build --src . --library "MyProject" --version "1.0.0"
 
 # For large repos, consider:
 # 1. Only rebuild when docs/ changes (in CI)
@@ -423,12 +423,12 @@ doc-nav build --src . --library "MyProject" --version "1.0.0"
 
 ```python
 def query_with_fallback(library, task):
-    """Try doc-nav, fall back to file search"""
+    """Try trail-docs, fall back to file search"""
     try:
         response = query_documentation(library, task)
         return response
     except Exception as e:
-        print(f"⚠️  doc-nav failed: {e}")
+        print(f"⚠️  trail-docs failed: {e}")
         print("Falling back to file search...")
         return fallback_file_search(task)
 ```
@@ -439,7 +439,7 @@ def query_with_fallback(library, task):
 def validate_index(project_path):
     """Check if index is usable"""
     try:
-        stats = run_cmd('doc-nav stats --json', cwd=project_path)
+        stats = run_cmd('trail-docs stats --json', cwd=project_path)
 
         if stats['docs_count'] == 0:
             raise ValueError("Index is empty")
@@ -463,16 +463,16 @@ def validate_index(project_path):
 def safe_open_doc(doc_id):
     """Open document with error handling"""
     try:
-        result = run_cmd(f'doc-nav open "{doc_id}" --json')
+        result = run_cmd(f'trail-docs open "{doc_id}" --json')
         return result
     except subprocess.CalledProcessError as e:
         if 'REF_NOT_FOUND' in e.stderr:
             # Try search as fallback
             search_term = doc_id.split('#')[0]
-            results = run_cmd(f'doc-nav search "{search_term}" --json')
+            results = run_cmd(f'trail-docs search "{search_term}" --json')
             if results['results']:
                 # Return closest match
-                return run_cmd(f'doc-nav open "{results["results"][0]["doc_id"]}" --json')
+                return run_cmd(f'trail-docs open "{results["results"][0]["doc_id"]}" --json')
         raise
 ```
 
@@ -511,7 +511,7 @@ class MultiProjectDocs:
         for name, project in self.projects.items():
             try:
                 result = run_cmd(
-                    f'doc-nav search "{keyword}" --json',
+                    f'trail-docs search "{keyword}" --json',
                     cwd=project['path']
                 )
                 results[name] = result
@@ -524,11 +524,11 @@ class MultiProjectDocs:
 
 ```bash
 # Set up search paths for multiple projects
-export DOCCLI_PATHS="/path/to/project1/.doc-nav:/path/to/project2/.doc-nav"
+export DOCCLI_PATHS="/path/to/project1/.trail-docs:/path/to/project2/.trail-docs"
 
 # Now 'use' command can find docs for any library
-doc-nav use "Project1" "task..."
-doc-nav use "Project2" "task..."
+trail-docs use "Project1" "task..."
+trail-docs use "Project2" "task..."
 ```
 
 ## Testing Your Documentation
@@ -537,7 +537,7 @@ doc-nav use "Project2" "task..."
 
 ```bash
 # Check stats
-doc-nav stats --json | jq '{
+trail-docs stats --json | jq '{
   docs: .docs_count,
   sections: .sections_count,
   avg_sections_per_doc: .sections_per_doc,
@@ -562,7 +562,7 @@ common_queries=(
 
 for query in "${common_queries[@]}"; do
   echo "Testing: $query"
-  result=$(doc-nav use "MyProject" "$query" --json)
+  result=$(trail-docs use "MyProject" "$query" --json)
   confidence=$(echo "$result" | jq -r '.confidence')
   steps=$(echo "$result" | jq -r '.steps | length')
 
@@ -578,12 +578,12 @@ done
 
 ```bash
 # Verify citations are reachable
-doc-nav use "MyProject" "How to deploy?" --json | \
+trail-docs use "MyProject" "How to deploy?" --json | \
   jq -r '.steps[].citations[]' | \
   while read citation; do
     # Extract doc_id#anchor from citation
     ref=$(echo "$citation" | cut -d: -f2)
-    doc-nav open "$ref" > /dev/null 2>&1
+    trail-docs open "$ref" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
       echo "✅ $ref"
     else
@@ -598,14 +598,14 @@ doc-nav use "MyProject" "How to deploy?" --json | \
 
 ```python
 # ✗ Bad: using 'use' for everything
-doc-nav use "Project" "version"  # Overkill
-doc-nav use "Project" "readme"   # Just open it
-doc-nav use "Project" "config"   # Just search
+trail-docs use "Project" "version"  # Overkill
+trail-docs use "Project" "readme"   # Just open it
+trail-docs use "Project" "config"   # Just search
 
 # ✓ Better: right tool for the job
-doc-nav stats  # version is in stats
-doc-nav open "readme"  # direct access
-doc-nav search "config"  # quick lookup
+trail-docs stats  # version is in stats
+trail-docs open "readme"  # direct access
+trail-docs search "config"  # quick lookup
 ```
 
 ### ❌ Pitfall 2: Ignoring Confidence Scores
@@ -651,18 +651,18 @@ if index_age_hours() > 24:
 
 ```python
 # ✗ Bad: assuming success
-result = subprocess.run(['doc-nav', 'use', ...])
+result = subprocess.run(['trail-docs', 'use', ...])
 data = json.loads(result.stdout)
 
 # ✓ Better: handle errors
 try:
-    result = subprocess.run(['doc-nav', 'use', ...],
+    result = subprocess.run(['trail-docs', 'use', ...],
                           capture_output=True,
                           timeout=10,
                           check=True)
     data = json.loads(result.stdout)
 except subprocess.CalledProcessError as e:
-    handle_doc-nav_error(e)
+    handle_trail-docs_error(e)
 except json.JSONDecodeError:
     handle_invalid_json()
 except subprocess.TimeoutExpired:
@@ -675,19 +675,19 @@ except subprocess.TimeoutExpired:
 
 ```
 1. First time with a codebase?
-   └─> doc-nav stats (see what's available)
+   └─> trail-docs stats (see what's available)
 
 2. Looking for something specific?
-   └─> doc-nav search "keyword"
+   └─> trail-docs search "keyword"
 
 3. Need to do a task?
-   └─> doc-nav use "Project" "How to..."
+   └─> trail-docs use "Project" "How to..."
 
 4. Want full document?
-   └─> doc-nav open "doc-id"
+   └─> trail-docs open "doc-id"
 
 5. Need to cite?
-   └─> doc-nav cite "doc-id#section"
+   └─> trail-docs cite "doc-id#section"
 ```
 
 ### Golden Rules
@@ -703,6 +703,6 @@ except subprocess.TimeoutExpired:
 
 ## Next Steps
 
-- See [Quick Start Guide](./doc-nav-quick-start.md) for getting started
-- See [Agent Integration Guide](./doc-nav-agent-integration.md) for AI agent workflows
+- See [Quick Start Guide](./trail-docs-quick-start.md) for getting started
+- See [Agent Integration Guide](./trail-docs-agent-integration.md) for AI agent workflows
 - Check [JSON Output Schema](./json_output_schema.md) for response formats

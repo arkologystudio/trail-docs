@@ -57,7 +57,7 @@ export function docsPathFor(snapshotDir) {
 }
 
 export function readManifestIfPresent(snapshotDir) {
-  const candidate = path.join(snapshotDir, ".doc-nav", "source.json");
+  const candidate = path.join(snapshotDir, ".trail-docs", "source.json");
   if (!fs.existsSync(candidate)) {
     return null;
   }
