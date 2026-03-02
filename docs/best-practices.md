@@ -1,6 +1,6 @@
 # DocCLI Best Practices
 
-Optimization tips and decision guide for using docpilot effectively.
+Optimization tips and decision guide for using doc-nav effectively.
 
 ## When to Use Which Command
 
@@ -10,24 +10,24 @@ Optimization tips and decision guide for using docpilot effectively.
 Need documentation info?
 │
 ├─ Library not installed yet?
-│  └─> docpilot discover "<library>" → docpilot fetch "<selector>" → docpilot build --source-manifest ...
+│  └─> doc-nav discover "<library>" → doc-nav fetch "<selector>" → doc-nav build --source-manifest ...
 │
 ├─ Want to know what's available?
-│  └─> docpilot stats / docpilot list
+│  └─> doc-nav stats / doc-nav list
 │
 ├─ Have specific question/task?
 │  │
 │  ├─ Simple topic lookup? (e.g., "authentication")
-│  │  └─> docpilot search "authentication"
+│  │  └─> doc-nav search "authentication"
 │  │
 │  └─ Complex task? (e.g., "How do I deploy with rollback?")
-│     └─> docpilot use "MyProject" "How do I deploy with rollback?"
+│     └─> doc-nav use "MyProject" "How do I deploy with rollback?"
 │
 ├─ Know exact doc location?
-│  └─> docpilot open "docs/guide#section"
+│  └─> doc-nav open "docs/guide#section"
 │
 └─ Need citation for reference?
-   └─> docpilot cite "docs/guide#section"
+   └─> doc-nav cite "docs/guide#section"
 ```
 
 ### Command Selection Guide
@@ -49,22 +49,22 @@ Need documentation info?
 ✅ **Simple keyword lookup**
 ```bash
 # ✓ Good use of search
-docpilot search "configuration"
-docpilot search "API endpoints"
-docpilot search "error codes"
+doc-nav search "configuration"
+doc-nav search "API endpoints"
+doc-nav search "error codes"
 ```
 
 ✅ **Exploring unfamiliar codebase**
 ```bash
 # First, see what's there
-docpilot search "architecture"
-docpilot search "getting started"
+doc-nav search "architecture"
+doc-nav search "getting started"
 ```
 
 ✅ **Finding specific term occurrences**
 ```bash
 # Find all mentions of a concept
-docpilot search "rate limiting"
+doc-nav search "rate limiting"
 ```
 
 ### Use `use` when:
@@ -72,21 +72,21 @@ docpilot search "rate limiting"
 ✅ **Task-oriented questions**
 ```bash
 # ✓ Good use of 'use'
-docpilot use "MyProject" "How do I deploy to production?"
-docpilot use "MyProject" "What are the backup procedures?"
-docpilot use "MyProject" "How do I troubleshoot connection errors?"
+doc-nav use "MyProject" "How do I deploy to production?"
+doc-nav use "MyProject" "What are the backup procedures?"
+doc-nav use "MyProject" "How do I troubleshoot connection errors?"
 ```
 
 ✅ **Need actionable steps**
 ```bash
 # When you want citation-backed instructions
-docpilot use "MyProject" "How do I configure SSL certificates?"
+doc-nav use "MyProject" "How do I configure SSL certificates?"
 ```
 
 ✅ **Want related context**
 ```bash
 # 'use' returns related_docs for exploration
-docpilot use "MyProject" "How does authentication work?"
+doc-nav use "MyProject" "How does authentication work?"
 # Returns related: docs/auth-guide, docs/security, docs/api-reference
 ```
 
@@ -95,19 +95,19 @@ docpilot use "MyProject" "How does authentication work?"
 ❌ **Don't use `use` for simple lookups**
 ```bash
 # ✗ Bad: overkill for simple lookup
-docpilot use "MyProject" "config file"
+doc-nav use "MyProject" "config file"
 
 # ✓ Better: use search
-docpilot search "config file"
+doc-nav search "config file"
 ```
 
 ❌ **Don't use `search` for complex questions**
 ```bash
 # ✗ Bad: won't get actionable answer
-docpilot search "how to deploy with zero downtime and rollback capability"
+doc-nav search "how to deploy with zero downtime and rollback capability"
 
 # ✓ Better: use 'use'
-docpilot use "MyProject" "How do I deploy with zero downtime and rollback?"
+doc-nav use "MyProject" "How do I deploy with zero downtime and rollback?"
 ```
 
 ## Agent Workflow Patterns
@@ -118,12 +118,12 @@ docpilot use "MyProject" "How do I deploy with zero downtime and rollback?"
 
 ```python
 # Step 1: Discover (once per session)
-stats = run_cmd('docpilot stats --json')
+stats = run_cmd('doc-nav stats --json')
 if stats['docs_count'] == 0:
     fallback_to_file_search()
 
 # Step 2: Query
-response = run_cmd('docpilot use "Project" "task description" --json')
+response = run_cmd('doc-nav use "Project" "task description" --json')
 
 # Step 3: Execute based on confidence
 for step in response['steps']:
@@ -141,12 +141,12 @@ for step in response['steps']:
 
 ```python
 # Step 1: Broad search
-results = run_cmd('docpilot search "deployment" --json')
+results = run_cmd('doc-nav search "deployment" --json')
 
 # Step 2: Open top results
 docs = []
 for result in results['results'][:3]:
-    doc = run_cmd(f'docpilot open "{result["doc_id"]}" --json')
+    doc = run_cmd(f'doc-nav open "{result["doc_id"]}" --json')
     docs.append(doc)
 
 # Step 3: Synthesize information
@@ -159,13 +159,13 @@ for result in results['results'][:3]:
 
 ```python
 # Step 1: Initial query
-response = run_cmd('docpilot use "Project" "authentication flow" --json')
+response = run_cmd('doc-nav use "Project" "authentication flow" --json')
 
 # Step 2: Check confidence
 if response['confidence'] == 'partial':
     # Step 3: Explore related docs
     for doc_id in response['related_docs']:
-        doc = run_cmd(f'docpilot open "{doc_id}" --json')
+        doc = run_cmd(f'doc-nav open "{doc_id}" --json')
         # Build knowledge graph
 ```
 
@@ -186,20 +186,20 @@ if response['confidence'] == 'partial':
 
 ```bash
 # ✗ Slow: using 'use' just to check if docs exist
-docpilot use "MyProject" "what is available" --json
+doc-nav use "MyProject" "what is available" --json
 
 # ✓ Fast: use stats
-docpilot stats --json
+doc-nav stats --json
 ```
 
 ### 2. Limit Result Sets
 
 ```bash
 # Faster: limit results
-docpilot search "deploy" --max-results 3
+doc-nav search "deploy" --max-results 3
 
 # Slower: default (10 results)
-docpilot search "deploy"
+doc-nav search "deploy"
 ```
 
 ### 3. Cache Repeated Queries
@@ -224,11 +224,11 @@ result2 = cached_query("MyProject", "How to deploy?")
 
 ```bash
 # Slower: parse human-readable output
-output=$(docpilot search "test")
+output=$(doc-nav search "test")
 # Parse text output...
 
 # Faster: use JSON
-output=$(docpilot search "test" --json)
+output=$(doc-nav search "test" --json)
 # Parse JSON (structured, predictable)
 ```
 
@@ -236,14 +236,14 @@ output=$(docpilot search "test" --json)
 
 ```bash
 # ✗ Inefficient: multiple separate calls
-docpilot search "backup" --json
-docpilot search "restore" --json
-docpilot search "recovery" --json
+doc-nav search "backup" --json
+doc-nav search "restore" --json
+doc-nav search "recovery" --json
 
 # ✓ Better: combined query
-docpilot search "backup restore recovery" --json
+doc-nav search "backup restore recovery" --json
 # Or use 'use' for related concepts:
-docpilot use "MyProject" "backup and restore procedures" --json
+doc-nav use "MyProject" "backup and restore procedures" --json
 ```
 
 ## Confidence Score Interpretation
@@ -374,12 +374,12 @@ def execute_with_audit_trail(step):
 1. **After documentation changes**
    ```bash
    # In git hooks or CI
-   docpilot build --src . --library "MyProject" --version "$(cat VERSION)"
+   doc-nav build --src . --library "MyProject" --version "$(cat VERSION)"
    ```
 
 2. **When stats show staleness**
    ```python
-   stats = run_cmd('docpilot stats --json')
+   stats = run_cmd('doc-nav stats --json')
    built_at = datetime.fromisoformat(stats['built_at'])
    age_hours = (datetime.now(timezone.utc) - built_at).total_seconds() / 3600
 
@@ -391,7 +391,7 @@ def execute_with_audit_trail(step):
    ```bash
    # On release
    NEW_VERSION="1.1.0"
-   docpilot build --src . --library "MyProject" --version "$NEW_VERSION"
+   doc-nav build --src . --library "MyProject" --version "$NEW_VERSION"
    ```
 
 ### Index Size Considerations
@@ -409,7 +409,7 @@ def execute_with_audit_trail(step):
 
 ```bash
 # Full rebuild (simple, always works)
-docpilot build --src . --library "MyProject" --version "1.0.0"
+doc-nav build --src . --library "MyProject" --version "1.0.0"
 
 # For large repos, consider:
 # 1. Only rebuild when docs/ changes (in CI)
@@ -423,12 +423,12 @@ docpilot build --src . --library "MyProject" --version "1.0.0"
 
 ```python
 def query_with_fallback(library, task):
-    """Try docpilot, fall back to file search"""
+    """Try doc-nav, fall back to file search"""
     try:
         response = query_documentation(library, task)
         return response
     except Exception as e:
-        print(f"⚠️  docpilot failed: {e}")
+        print(f"⚠️  doc-nav failed: {e}")
         print("Falling back to file search...")
         return fallback_file_search(task)
 ```
@@ -439,7 +439,7 @@ def query_with_fallback(library, task):
 def validate_index(project_path):
     """Check if index is usable"""
     try:
-        stats = run_cmd('docpilot stats --json', cwd=project_path)
+        stats = run_cmd('doc-nav stats --json', cwd=project_path)
 
         if stats['docs_count'] == 0:
             raise ValueError("Index is empty")
@@ -463,16 +463,16 @@ def validate_index(project_path):
 def safe_open_doc(doc_id):
     """Open document with error handling"""
     try:
-        result = run_cmd(f'docpilot open "{doc_id}" --json')
+        result = run_cmd(f'doc-nav open "{doc_id}" --json')
         return result
     except subprocess.CalledProcessError as e:
         if 'REF_NOT_FOUND' in e.stderr:
             # Try search as fallback
             search_term = doc_id.split('#')[0]
-            results = run_cmd(f'docpilot search "{search_term}" --json')
+            results = run_cmd(f'doc-nav search "{search_term}" --json')
             if results['results']:
                 # Return closest match
-                return run_cmd(f'docpilot open "{results["results"][0]["doc_id"]}" --json')
+                return run_cmd(f'doc-nav open "{results["results"][0]["doc_id"]}" --json')
         raise
 ```
 
@@ -511,7 +511,7 @@ class MultiProjectDocs:
         for name, project in self.projects.items():
             try:
                 result = run_cmd(
-                    f'docpilot search "{keyword}" --json',
+                    f'doc-nav search "{keyword}" --json',
                     cwd=project['path']
                 )
                 results[name] = result
@@ -524,11 +524,11 @@ class MultiProjectDocs:
 
 ```bash
 # Set up search paths for multiple projects
-export DOCCLI_PATHS="/path/to/project1/.docpilot:/path/to/project2/.docpilot"
+export DOCCLI_PATHS="/path/to/project1/.doc-nav:/path/to/project2/.doc-nav"
 
 # Now 'use' command can find docs for any library
-docpilot use "Project1" "task..."
-docpilot use "Project2" "task..."
+doc-nav use "Project1" "task..."
+doc-nav use "Project2" "task..."
 ```
 
 ## Testing Your Documentation
@@ -537,7 +537,7 @@ docpilot use "Project2" "task..."
 
 ```bash
 # Check stats
-docpilot stats --json | jq '{
+doc-nav stats --json | jq '{
   docs: .docs_count,
   sections: .sections_count,
   avg_sections_per_doc: .sections_per_doc,
@@ -562,7 +562,7 @@ common_queries=(
 
 for query in "${common_queries[@]}"; do
   echo "Testing: $query"
-  result=$(docpilot use "MyProject" "$query" --json)
+  result=$(doc-nav use "MyProject" "$query" --json)
   confidence=$(echo "$result" | jq -r '.confidence')
   steps=$(echo "$result" | jq -r '.steps | length')
 
@@ -578,12 +578,12 @@ done
 
 ```bash
 # Verify citations are reachable
-docpilot use "MyProject" "How to deploy?" --json | \
+doc-nav use "MyProject" "How to deploy?" --json | \
   jq -r '.steps[].citations[]' | \
   while read citation; do
     # Extract doc_id#anchor from citation
     ref=$(echo "$citation" | cut -d: -f2)
-    docpilot open "$ref" > /dev/null 2>&1
+    doc-nav open "$ref" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
       echo "✅ $ref"
     else
@@ -598,14 +598,14 @@ docpilot use "MyProject" "How to deploy?" --json | \
 
 ```python
 # ✗ Bad: using 'use' for everything
-docpilot use "Project" "version"  # Overkill
-docpilot use "Project" "readme"   # Just open it
-docpilot use "Project" "config"   # Just search
+doc-nav use "Project" "version"  # Overkill
+doc-nav use "Project" "readme"   # Just open it
+doc-nav use "Project" "config"   # Just search
 
 # ✓ Better: right tool for the job
-docpilot stats  # version is in stats
-docpilot open "readme"  # direct access
-docpilot search "config"  # quick lookup
+doc-nav stats  # version is in stats
+doc-nav open "readme"  # direct access
+doc-nav search "config"  # quick lookup
 ```
 
 ### ❌ Pitfall 2: Ignoring Confidence Scores
@@ -651,18 +651,18 @@ if index_age_hours() > 24:
 
 ```python
 # ✗ Bad: assuming success
-result = subprocess.run(['docpilot', 'use', ...])
+result = subprocess.run(['doc-nav', 'use', ...])
 data = json.loads(result.stdout)
 
 # ✓ Better: handle errors
 try:
-    result = subprocess.run(['docpilot', 'use', ...],
+    result = subprocess.run(['doc-nav', 'use', ...],
                           capture_output=True,
                           timeout=10,
                           check=True)
     data = json.loads(result.stdout)
 except subprocess.CalledProcessError as e:
-    handle_docpilot_error(e)
+    handle_doc-nav_error(e)
 except json.JSONDecodeError:
     handle_invalid_json()
 except subprocess.TimeoutExpired:
@@ -675,19 +675,19 @@ except subprocess.TimeoutExpired:
 
 ```
 1. First time with a codebase?
-   └─> docpilot stats (see what's available)
+   └─> doc-nav stats (see what's available)
 
 2. Looking for something specific?
-   └─> docpilot search "keyword"
+   └─> doc-nav search "keyword"
 
 3. Need to do a task?
-   └─> docpilot use "Project" "How to..."
+   └─> doc-nav use "Project" "How to..."
 
 4. Want full document?
-   └─> docpilot open "doc-id"
+   └─> doc-nav open "doc-id"
 
 5. Need to cite?
-   └─> docpilot cite "doc-id#section"
+   └─> doc-nav cite "doc-id#section"
 ```
 
 ### Golden Rules
@@ -703,6 +703,6 @@ except subprocess.TimeoutExpired:
 
 ## Next Steps
 
-- See [Quick Start Guide](./docpilot-quick-start.md) for getting started
-- See [Agent Integration Guide](./docpilot-agent-integration.md) for AI agent workflows
+- See [Quick Start Guide](./doc-nav-quick-start.md) for getting started
+- See [Agent Integration Guide](./doc-nav-agent-integration.md) for AI agent workflows
 - Check [JSON Output Schema](./json_output_schema.md) for response formats

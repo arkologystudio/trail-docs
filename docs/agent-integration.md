@@ -1,12 +1,12 @@
 # DocCLI Agent Integration Guide
 
-How to integrate docpilot into AI agent systems for intelligent documentation retrieval.
+How to integrate doc-nav into AI agent systems for intelligent documentation retrieval.
 
 ## Overview
 
-docpilot is designed specifically for AI agents. This guide shows you how to integrate it into your agent workflows for efficient, citation-backed documentation access.
+doc-nav is designed specifically for AI agents. This guide shows you how to integrate it into your agent workflows for efficient, citation-backed documentation access.
 
-## Why docpilot for Agents?
+## Why doc-nav for Agents?
 
 ### Traditional Approach Problems
 - 📂 Reading entire doc directories is token-expensive
@@ -14,7 +14,7 @@ docpilot is designed specifically for AI agents. This guide shows you how to int
 - 📝 No structured way to cite sources
 - 🎯 Hard to get actionable steps from raw documentation
 
-### docpilot Solution
+### doc-nav Solution
 - ✅ Pre-indexed, fast search (no file I/O spam)
 - ✅ Natural language queries with citation-backed answers
 - ✅ Confidence scores guide next actions
@@ -32,16 +32,16 @@ docpilot is designed specifically for AI agents. This guide shows you how to int
          │ Shell command or API wrapper
          │
 ┌────────▼────────┐
-│     docpilot      │
+│     doc-nav      │
 │  (CLI process)  │
 └────────┬────────┘
          │
          │ Reads from
          │
 ┌────────▼────────┐
-│ .docpilot/        │
+│ .doc-nav/        │
 │  index.json     │
-│  docpilot.json    │
+│  doc-nav.json    │
 └─────────────────┘
 ```
 
@@ -49,10 +49,10 @@ docpilot is designed specifically for AI agents. This guide shows you how to int
 
 For unknown libraries, add an acquisition phase before query:
 
-1. `docpilot discover "<library>" ...`
-2. `docpilot fetch "<selector>" ...`
-3. `docpilot build --source-manifest ...`
-4. `docpilot use ...`
+1. `doc-nav discover "<library>" ...`
+2. `doc-nav fetch "<selector>" ...`
+3. `doc-nav build --source-manifest ...`
+4. `doc-nav use ...`
 
 This keeps citations tied to pinned external refs (`resolved_ref`) and preserves provenance in JSON outputs.
 
@@ -71,7 +71,7 @@ def discover_documentation(project_path):
 
     # Get index statistics
     result = subprocess.run(
-        ['docpilot', 'stats', '--json'],
+        ['doc-nav', 'stats', '--json'],
         cwd=project_path,
         capture_output=True,
         text=True
@@ -90,7 +90,7 @@ def discover_documentation(project_path):
 stats = discover_documentation('/path/to/project')
 if stats['docs_count'] > 0:
     print(f"📚 Found {stats['docs_count']} documentation files")
-    # Proceed with docpilot-based lookup
+    # Proceed with doc-nav-based lookup
 else:
     print("⚠️  No documentation index found, falling back to file search")
 ```
@@ -105,8 +105,8 @@ def query_documentation(library, task, project_path):
 
     result = subprocess.run(
         [
-            'docpilot', 'use', library, task,
-            '--path', f'{project_path}/.docpilot',
+            'doc-nav', 'use', library, task,
+            '--path', f'{project_path}/.doc-nav',
             '--max-results', '5',
             '--json'
         ],
@@ -183,7 +183,7 @@ def iterative_lookup(library, initial_task, project_path):
         # Try keyword search instead
         keywords = extract_keywords(initial_task)
         search_result = subprocess.run(
-            ['docpilot', 'search', keywords, '--json'],
+            ['doc-nav', 'search', keywords, '--json'],
             cwd=project_path,
             capture_output=True,
             text=True
@@ -195,7 +195,7 @@ def iterative_lookup(library, initial_task, project_path):
         if results['results']:
             top_doc = results['results'][0]
             doc_content = subprocess.run(
-                ['docpilot', 'open', f"{top_doc['doc_id']}#{top_doc['anchor']}", '--json'],
+                ['doc-nav', 'open', f"{top_doc['doc_id']}#{top_doc['anchor']}", '--json'],
                 cwd=project_path,
                 capture_output=True,
                 text=True
@@ -234,7 +234,7 @@ def explore_related(library, initial_task, project_path, max_depth=2):
 
                 # Open related doc
                 doc_result = subprocess.run(
-                    ['docpilot', 'open', doc_id, '--json'],
+                    ['doc-nav', 'open', doc_id, '--json'],
                     cwd=project_path,
                     capture_output=True,
                     text=True
@@ -298,8 +298,8 @@ class DocCLITool:
         """Natural language query"""
         result = subprocess.run(
             [
-                'docpilot', 'use', self.library_name, task,
-                '--path', f'{self.project_path}/.docpilot',
+                'doc-nav', 'use', self.library_name, task,
+                '--path', f'{self.project_path}/.doc-nav',
                 '--json'
             ],
             capture_output=True,
@@ -311,7 +311,7 @@ class DocCLITool:
     def search(self, keywords):
         """Keyword search"""
         result = subprocess.run(
-            ['docpilot', 'search', keywords, '--json'],
+            ['doc-nav', 'search', keywords, '--json'],
             cwd=self.project_path,
             capture_output=True,
             text=True,
@@ -322,7 +322,7 @@ class DocCLITool:
     def get_doc(self, doc_id):
         """Get full document content"""
         result = subprocess.run(
-            ['docpilot', 'open', doc_id, '--json'],
+            ['doc-nav', 'open', doc_id, '--json'],
             cwd=self.project_path,
             capture_output=True,
             text=True,
@@ -347,7 +347,7 @@ for step in response['steps']:
 ### Example 2: MCP Server Tool Integration
 
 ```typescript
-// MCP server exposing docpilot as a tool
+// MCP server exposing doc-nav as a tool
 import { McpServer } from '@modelcontextprotocol/sdk';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -355,7 +355,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 const server = new McpServer({
-  name: 'docpilot-mcp-server',
+  name: 'doc-nav-mcp-server',
   version: '1.0.0'
 });
 
@@ -368,7 +368,7 @@ server.tool('query-docs', {
   },
   handler: async ({ library, task, max_results }) => {
     const { stdout } = await execAsync(
-      `docpilot use "${library}" "${task}" --path .docpilot --max-results ${max_results} --json`
+      `doc-nav use "${library}" "${task}" --path .doc-nav --max-results ${max_results} --json`
     );
 
     const response = JSON.parse(stdout);
@@ -395,7 +395,7 @@ server.tool('search-docs', {
   },
   handler: async ({ query, max_results }) => {
     const { stdout } = await execAsync(
-      `docpilot search "${query}" --max-results ${max_results} --json`
+      `doc-nav search "${query}" --max-results ${max_results} --json`
     );
 
     const response = JSON.parse(stdout);
@@ -416,7 +416,7 @@ server.tool('search-docs', {
 
 ```python
 class AutonomousAgent:
-    """Agent that uses docpilot for self-guided task execution"""
+    """Agent that uses doc-nav for self-guided task execution"""
 
     def __init__(self, project_path, library_name):
         self.docs = DocCLITool(project_path, library_name)
@@ -508,7 +508,7 @@ class AutonomousAgent:
 def ensure_fresh_index(project_path, max_age_hours=24):
     """Rebuild index if stale"""
     stats_result = subprocess.run(
-        ['docpilot', 'stats', '--json'],
+        ['doc-nav', 'stats', '--json'],
         cwd=project_path,
         capture_output=True,
         text=True
@@ -588,23 +588,23 @@ def safe_query(library, task, project_path, fallback=None):
     """Query with error handling"""
     try:
         result = subprocess.run(
-            ['docpilot', 'use', library, task, '--path', f'{project_path}/.docpilot', '--json'],
+            ['doc-nav', 'use', library, task, '--path', f'{project_path}/.doc-nav', '--json'],
             capture_output=True,
             text=True,
             timeout=10
         )
 
         if result.returncode != 0:
-            print(f"⚠️  docpilot error: {result.stderr}")
+            print(f"⚠️  doc-nav error: {result.stderr}")
             return fallback
 
         return json.loads(result.stdout)
 
     except subprocess.TimeoutExpired:
-        print("⚠️  docpilot query timed out")
+        print("⚠️  doc-nav query timed out")
         return fallback
     except json.JSONDecodeError:
-        print("⚠️  Invalid JSON response from docpilot")
+        print("⚠️  Invalid JSON response from doc-nav")
         return fallback
     except Exception as e:
         print(f"⚠️  Unexpected error: {e}")
@@ -629,8 +629,8 @@ def safe_query(library, task, project_path, fallback=None):
 ## Testing Your Integration
 
 ```python
-def test_docpilot_integration():
-    """Test suite for docpilot integration"""
+def test_doc-nav_integration():
+    """Test suite for doc-nav integration"""
 
     project_path = '/path/to/test/project'
     library = 'TestProject'
@@ -641,7 +641,7 @@ def test_docpilot_integration():
 
     # Test 2: Search returns results
     search_result = subprocess.run(
-        ['docpilot', 'search', 'test', '--json'],
+        ['doc-nav', 'search', 'test', '--json'],
         cwd=project_path,
         capture_output=True,
         text=True
@@ -664,11 +664,11 @@ def test_docpilot_integration():
 
 ## Troubleshooting Integration Issues
 
-### Issue: "Command not found: docpilot"
+### Issue: "Command not found: doc-nav"
 
-**Solution:** Ensure docpilot is in PATH or use absolute path:
+**Solution:** Ensure doc-nav is in PATH or use absolute path:
 ```python
-DOCCLI_PATH = '/usr/local/bin/docpilot'  # or full path
+DOCCLI_PATH = '/usr/local/bin/doc-nav'  # or full path
 subprocess.run([DOCCLI_PATH, 'stats', ...])
 ```
 
@@ -692,6 +692,6 @@ subprocess.run([...], timeout=10)  # 10 second timeout
 
 ## Next Steps
 
-- See [Quick Start Guide](./docpilot-quick-start.md) for basic usage
-- See [Best Practices](./docpilot-best-practices.md) for optimization tips
+- See [Quick Start Guide](./doc-nav-quick-start.md) for basic usage
+- See [Best Practices](./doc-nav-best-practices.md) for optimization tips
 - Check [JSON Output Schema](./json_output_schema.md) for response formats

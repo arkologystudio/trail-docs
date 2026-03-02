@@ -18,7 +18,7 @@ const CODE_EXTENSIONS = new Set([
 const IGNORED_DIRECTORIES = new Set([
   "node_modules",
   ".git",
-  ".docpilot",
+  ".doc-nav",
   "dist",
   "build",
   "coverage",

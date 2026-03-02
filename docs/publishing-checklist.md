@@ -11,7 +11,7 @@ Use this checklist before tagging and publishing.
 ## Documentation
 
 1. `README.md` command examples match CLI behavior.
-2. `docs/docpilot-quick-start.md` includes current workflows.
+2. `docs/doc-nav-quick-start.md` includes current workflows.
 3. `docs/json_output_schema.md` matches actual `--json` output.
 4. `CHANGELOG.md` has an entry for the target release.
 
@@ -24,7 +24,7 @@ Use this checklist before tagging and publishing.
 
 ## Security and Provenance
 
-1. `fetch` policy behavior validated with a `docpilot.policy.json` sample.
+1. `fetch` policy behavior validated with a `doc-nav.policy.json` sample.
 2. `build --source-manifest` path tested.
 3. `cite` and `use` include expected provenance fields for external docs.
 
@@ -37,6 +37,6 @@ Use this checklist before tagging and publishing.
 5. Verify package install and smoke test:
 
 ```bash
-npm install -g docpilot@<x.y.z>
-docpilot --help
+npm install -g doc-nav@<x.y.z>
+doc-nav --help
 ```

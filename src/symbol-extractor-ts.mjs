@@ -5,7 +5,7 @@ import { resolvePackageEntryCandidates } from "./source-resolver.mjs";
 import { toPosixPath } from "./utils.mjs";
 
 const SOURCE_EXTENSIONS = new Set([".d.ts", ".ts", ".tsx", ".js", ".mjs", ".cjs"]);
-const IGNORED_DIRECTORIES = new Set(["node_modules", ".git", ".docpilot", "coverage", ".cache", "tmp", "temp"]);
+const IGNORED_DIRECTORIES = new Set(["node_modules", ".git", ".doc-nav", "coverage", ".cache", "tmp", "temp"]);
 
 function nodeHasModifier(node, kind) {
   return Array.isArray(node.modifiers) && node.modifiers.some((entry) => entry.kind === kind);

@@ -2,11 +2,11 @@
 
 Natural language documentation retrieval for AI agents – via CLI!
 
-`docpilot` turns markdown docs into a searchable, citation-backed knowledge base and now supports pre-install research for external libraries.
+`doc-nav` turns markdown docs into a searchable, citation-backed knowledge base and now supports pre-install research for external libraries.
 
-`docpilot`'s purpose is to improve codebase comprehension and navitation for agents – ultimately making it easier, faster and cheaper to use software libraries. 
+`doc-nav`'s purpose is to improve codebase comprehension and navitation for agents – ultimately making it easier, faster and cheaper to use software libraries. 
 
-`docpilot` was designed primarily _for_ agents, although it can be used by human developers as well.
+`doc-nav` was designed primarily _for_ agents, although it can be used by human developers as well.
 
 
 ## Why DocCLI
@@ -16,7 +16,7 @@ AI agents typically either:
 1. Read too many files (high token cost), or
 2. Use brittle grep loops (high latency, weak traceability).
 
-`docpilot` provides:
+`doc-nav` provides:
 
 1. Fast local retrieval from an index.
 2. Deterministic JSON output.
@@ -26,7 +26,7 @@ AI agents typically either:
 ## Install
 
 ```bash
-npm install -g docpilot
+npm install -g doc-nav
 ```
 
 ## Core Workflows
@@ -34,11 +34,11 @@ npm install -g docpilot
 ### 1) Local docs workflow (existing project docs)
 
 ```bash
-docpilot build --src . --library "MyProject" --version "1.0.0" --out .docpilot/index.json
+doc-nav build --src . --library "MyProject" --version "1.0.0" --out .doc-nav/index.json
 
-echo '{"schema_version":"1","library":"MyProject","library_version":"1.0.0","index_path":"index.json"}' > .docpilot/docpilot.json
+echo '{"schema_version":"1","library":"MyProject","library_version":"1.0.0","index_path":"index.json"}' > .doc-nav/doc-nav.json
 
-docpilot use "MyProject" "How do I deploy to production?" --path .docpilot
+doc-nav use "MyProject" "How do I deploy to production?" --path .doc-nav
 ```
 
 ### 2) Pre-install research workflow (unknown library)
@@ -46,38 +46,38 @@ docpilot use "MyProject" "How do I deploy to production?" --path .docpilot
 ```bash
 # Discover candidates
 # (providers: all|catalog|npm|github)
-docpilot discover "axios" --provider npm --max-results 5 --json
+doc-nav discover "axios" --provider npm --max-results 5 --json
 
 # Fetch docs snapshot and pin source ref
-docpilot fetch "npm:axios" --json
+doc-nav fetch "npm:axios" --json
 
 # Build index from fetched docs with provenance
 # (using the fetch output paths)
-docpilot build \
-  --src .docpilot/cache/sources/<snapshot>/docs \
+doc-nav build \
+  --src .doc-nav/cache/sources/<snapshot>/docs \
   --library "axios" \
   --version "1.13.6" \
-  --source-manifest .docpilot/cache/sources/<snapshot>/.docpilot/source.json \
-  --out .docpilot/index.json
+  --source-manifest .doc-nav/cache/sources/<snapshot>/.doc-nav/source.json \
+  --out .doc-nav/index.json
 
 # One-shot alternative (discover/fetch/build/manifest):
-docpilot prep "axios" --path .docpilot --json
+doc-nav prep "axios" --path .doc-nav --json
 
 # One-shot URL ingestion:
-docpilot index "https://raw.githubusercontent.com/axios/axios/v1.x/README.md" --path .docpilot --json
+doc-nav index "https://raw.githubusercontent.com/axios/axios/v1.x/README.md" --path .doc-nav --json
 ```
 
 ### 3) API surface + callable guidance workflow
 
 ```bash
 # Extract exported API + signatures
-docpilot surface npm:openai --json
+doc-nav surface npm:openai --json
 
 # Look up a concrete callable
-docpilot fn "npm:openai#OpenAI.complete" --json
+doc-nav fn "npm:openai#OpenAI.complete" --json
 
 # Route a task across multiple candidate libraries
-docpilot use "extract structured data from text" --libs npm:openai,npm:transformers --json
+doc-nav use "extract structured data from text" --libs npm:openai,npm:transformers --json
 ```
 
 ## Commands
@@ -98,24 +98,24 @@ docpilot use "extract structured data from text" --libs npm:openai,npm:transform
 | `cite` | Emit canonical citation |
 | `use` | Task-based steps with citations |
 
-## Project Config (`docpilot.toml`)
+## Project Config (`doc-nav.toml`)
 
 Optional project defaults:
 
 ```toml
 library = "MyProject"
-index_path = ".docpilot/index.json"
-manifest_path = ".docpilot"
+index_path = ".doc-nav/index.json"
+manifest_path = ".doc-nav"
 output = "json"
 
 [trust]
-policy = "docpilot.policy.json"
+policy = "doc-nav.policy.json"
 
 [federation]
-indexes = [".docpilot/index.json", "../plugin/.docpilot/index.json"]
+indexes = [".doc-nav/index.json", "../plugin/.doc-nav/index.json"]
 ```
 
-Run `docpilot --help` for full flags.
+Run `doc-nav --help` for full flags.
 
 ## JSON Output
 
@@ -159,7 +159,7 @@ Full schema: [docs/json_output_schema.md](./docs/json_output_schema.md)
 
 Fetched documentation is treated as untrusted input.
 
-`fetch` supports policy controls via `docpilot.policy.json`:
+`fetch` supports policy controls via `doc-nav.policy.json`:
 
 ```json
 {
@@ -181,11 +181,11 @@ The source manifest stores:
 
 ## Performance Notes
 
-`docpilot` is optimized for deterministic local retrieval.
+`doc-nav` is optimized for deterministic local retrieval.
 
 1. Build once, query many.
 2. Use `--json` for agent integrations.
-3. For repeated external research, reuse cached snapshots from `.docpilot/cache/sources`.
+3. For repeated external research, reuse cached snapshots from `.doc-nav/cache/sources`.
 
 ## Testing
 
@@ -197,9 +197,9 @@ Current suite covers deterministic builds, retrieval commands, manifest resoluti
 
 ## Documentation
 
-1. [Quick Start](./docs/docpilot-quick-start.md)
-2. [Agent Integration](./docs/docpilot-agent-integration.md)
-3. [Best Practices](./docs/docpilot-best-practices.md)
+1. [Quick Start](./docs/doc-nav-quick-start.md)
+2. [Agent Integration](./docs/doc-nav-agent-integration.md)
+3. [Best Practices](./docs/doc-nav-best-practices.md)
 4. [JSON Output Schema](./docs/json_output_schema.md)
 5. [V1 Publishing Plan](./docs/v1_publishing_plan.md)
 

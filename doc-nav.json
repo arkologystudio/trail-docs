@@ -2,6 +2,6 @@
   "schema_version": "1",
   "library": "acme-runtime",
   "library_version": "0.0.1-derived",
-  "index_path": ".docpilot/index.json",
+  "index_path": ".doc-nav/index.json",
   "built_at": "2026-02-24T19:19:22.319Z"
 }

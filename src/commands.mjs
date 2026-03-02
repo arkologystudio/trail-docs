@@ -195,7 +195,7 @@ function selectSection(index, rawRef) {
       EXIT_CODES.REF_NOT_FOUND,
       "REF_NOT_FOUND",
       `No section found for ${rawRef}`,
-      "Run docpilot search with a related query"
+      "Run doc-nav search with a related query"
     );
   }
 
@@ -578,13 +578,13 @@ function readManifest(manifestPath) {
 function findManifestForLibrary(library, explicitPath = "") {
   const candidates = [];
   const pushCandidateSet = (baseDir) => {
-    candidates.push(path.resolve(baseDir, "docpilot.json"));
+    candidates.push(path.resolve(baseDir, "doc-nav.json"));
     candidates.push(path.resolve(baseDir, "manifest.json"));
-    candidates.push(path.resolve(baseDir, ".docpilot", "docpilot.json"));
-    candidates.push(path.resolve(baseDir, ".docpilot", "manifest.json"));
-    candidates.push(path.resolve(baseDir, library, "docpilot.json"));
+    candidates.push(path.resolve(baseDir, ".doc-nav", "doc-nav.json"));
+    candidates.push(path.resolve(baseDir, ".doc-nav", "manifest.json"));
+    candidates.push(path.resolve(baseDir, library, "doc-nav.json"));
     candidates.push(path.resolve(baseDir, library, "manifest.json"));
-    candidates.push(path.resolve(baseDir, library, ".docpilot", "docpilot.json"));
+    candidates.push(path.resolve(baseDir, library, ".doc-nav", "doc-nav.json"));
   };
 
   if (explicitPath) {
@@ -609,9 +609,9 @@ function findManifestForLibrary(library, explicitPath = "") {
 
   let current = process.cwd();
   while (true) {
-    candidates.push(path.join(current, "node_modules", library, "docpilot.json"));
+    candidates.push(path.join(current, "node_modules", library, "doc-nav.json"));
     candidates.push(path.join(current, "node_modules", library, "manifest.json"));
-    candidates.push(path.join(current, "node_modules", library, ".docpilot", "docpilot.json"));
+    candidates.push(path.join(current, "node_modules", library, ".doc-nav", "doc-nav.json"));
     const parent = path.dirname(current);
     if (parent === current) {
       break;
@@ -631,12 +631,12 @@ function findManifestForLibrary(library, explicitPath = "") {
     EXIT_CODES.RESOLUTION_FAILED,
     "RESOLUTION_FAILED",
     `Could not locate docs manifest for library ${library}. Checked: ${searched}${deduped.length > 8 ? ", ..." : ""}`,
-    "Install docs artifact, emit docpilot.json, set DOCCLI_PATHS, or pass --path"
+    "Install docs artifact, emit doc-nav.json, set DOCCLI_PATHS, or pass --path"
   );
 }
 
 function resolveIndexForCommand(flags) {
-  return flags.index ? path.resolve(String(flags.index)) : path.resolve(".docpilot/index.json");
+  return flags.index ? path.resolve(String(flags.index)) : path.resolve(".doc-nav/index.json");
 }
 
 export function runList(flags) {
@@ -687,7 +687,7 @@ export function runStats(flags) {
 
 export function runBuild(flags) {
   const srcDir = requireFlag(flags, "src");
-  const outFile = flags.out ? String(flags.out) : ".docpilot/index.json";
+  const outFile = flags.out ? String(flags.out) : ".doc-nav/index.json";
   const library = requireFlag(flags, "library");
   const version = requireFlag(flags, "version");
   const sourceManifestPath = flags["source-manifest"] ? String(flags["source-manifest"]) : "";
@@ -698,10 +698,10 @@ export function runBootstrap(flags) {
   const srcDir = requireFlag(flags, "src");
   const library = requireFlag(flags, "library");
   const version = requireFlag(flags, "version");
-  const docsOutDir = flags["docs-out"] ? String(flags["docs-out"]) : ".docpilot/generated-docs";
-  const outFile = flags.out ? String(flags.out) : ".docpilot/index.json";
+  const docsOutDir = flags["docs-out"] ? String(flags["docs-out"]) : ".doc-nav/generated-docs";
+  const outFile = flags.out ? String(flags.out) : ".doc-nav/index.json";
   const shouldEmitManifest = Boolean(flags["emit-manifest"]);
-  const manifestOut = flags["manifest-out"] ? String(flags["manifest-out"]) : "docpilot.json";
+  const manifestOut = flags["manifest-out"] ? String(flags["manifest-out"]) : "doc-nav.json";
 
   const generated = generateBootstrapDocs({
     srcDir,
@@ -733,7 +733,7 @@ export function runBootstrap(flags) {
       schema_version: "1",
       library,
       library_version: version,
-      index_path: relativeIndexPath || ".docpilot/index.json",
+      index_path: relativeIndexPath || ".doc-nav/index.json",
       built_at: new Date().toISOString()
     };
 
@@ -767,7 +767,7 @@ export function runSearch(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing query text for search",
-      "Usage: docpilot search <query>"
+      "Usage: doc-nav search <query>"
     );
   }
 
@@ -827,7 +827,7 @@ export function runOpen(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing reference for open",
-      "Usage: docpilot open <doc_id#anchor>"
+      "Usage: doc-nav open <doc_id#anchor>"
     );
   }
 
@@ -856,7 +856,7 @@ export function runCite(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing reference for cite",
-      "Usage: docpilot cite <doc_id#anchor>"
+      "Usage: doc-nav cite <doc_id#anchor>"
     );
   }
 
@@ -872,7 +872,7 @@ export async function runDiscover(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing query text for discover",
-      "Usage: docpilot discover <query>"
+      "Usage: doc-nav discover <query>"
     );
   }
 
@@ -892,7 +892,7 @@ export async function runFetch(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing selector for fetch",
-      "Usage: docpilot fetch <selector>"
+      "Usage: doc-nav fetch <selector>"
     );
   }
 
@@ -909,7 +909,7 @@ export async function runPrep(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing query or selector for prep",
-      "Usage: docpilot prep <query_or_selector_or_url>"
+      "Usage: doc-nav prep <query_or_selector_or_url>"
     );
   }
 
@@ -943,9 +943,9 @@ export async function runPrep(positionals, flags) {
     flags
   });
 
-  const outRoot = flags.path ? path.resolve(String(flags.path)) : path.resolve(".docpilot");
+  const outRoot = flags.path ? path.resolve(String(flags.path)) : path.resolve(".doc-nav");
   const outFile = flags.out ? path.resolve(String(flags.out)) : path.join(outRoot, "index.json");
-  const manifestPath = flags["manifest-out"] ? path.resolve(String(flags["manifest-out"])) : path.join(outRoot, "docpilot.json");
+  const manifestPath = flags["manifest-out"] ? path.resolve(String(flags["manifest-out"])) : path.join(outRoot, "doc-nav.json");
   const library = flags.library ? String(flags.library) : fetchResult.library;
   const version = flags.version ? String(flags.version) : fetchResult.resolved_ref;
 
@@ -991,7 +991,7 @@ export async function runSurface(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing selector for surface",
-      "Usage: docpilot surface <selector>"
+      "Usage: doc-nav surface <selector>"
     );
   }
 
@@ -1006,7 +1006,7 @@ export async function runFn(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing selector or symbol for fn command",
-      "Usage: docpilot fn <selector#symbol_query>"
+      "Usage: doc-nav fn <selector#symbol_query>"
     );
   }
 
@@ -1017,7 +1017,7 @@ export async function runFn(positionals, flags) {
       EXIT_CODES.REF_NOT_FOUND,
       "REF_NOT_FOUND",
       `No symbol found for ${symbolQuery}`,
-      "Run docpilot surface and inspect available symbols"
+      "Run doc-nav surface and inspect available symbols"
     );
   }
 
@@ -1102,7 +1102,7 @@ export async function runUseMulti(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing task or --libs values for use multi-library mode",
-      "Usage: docpilot use \"<task>\" --libs <selector1,selector2,...>"
+      "Usage: doc-nav use \"<task>\" --libs <selector1,selector2,...>"
     );
   }
 
@@ -1291,7 +1291,7 @@ async function runUseFederatedDocs(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing task or --indexes for federated use mode",
-      "Usage: docpilot use \"<task>\" --indexes <index1,index2,...>"
+      "Usage: doc-nav use \"<task>\" --indexes <index1,index2,...>"
     );
   }
 
@@ -1359,7 +1359,7 @@ async function runUseLegacy(positionals, flags) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing library or task for use command",
-      "Usage: docpilot use <library> \"<task>\""
+      "Usage: doc-nav use <library> \"<task>\""
     );
   }
 
@@ -1385,7 +1385,7 @@ async function runUseLegacy(positionals, flags) {
 
     const healed = await runPrep([library], {
       ...flags,
-      path: flags.path ? String(flags.path) : ".docpilot"
+      path: flags.path ? String(flags.path) : ".doc-nav"
     });
     manifestPath = healed.manifest_path;
     manifest = readManifest(manifestPath);

@@ -1,6 +1,6 @@
 # DocCLI JSON Output Schema (v0.1.x)
 
-This document defines the JSON shape for each `docpilot` command when `--json` is used.
+This document defines the JSON shape for each `doc-nav` command when `--json` is used.
 
 ## Error Envelope
 

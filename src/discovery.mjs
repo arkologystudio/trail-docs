@@ -152,7 +152,7 @@ function discoverFromCatalog(query, maxResults, catalogPath, ecosystem = "") {
 async function readJsonWithRateLimit(url) {
   const response = await fetch(url, {
     headers: {
-      "user-agent": "docpilot/0.1.0"
+      "user-agent": "doc-nav/0.1.0"
     }
   });
 
@@ -371,7 +371,7 @@ export async function discoverLibraries({
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing query text for discover",
-      "Usage: docpilot discover <query>"
+      "Usage: doc-nav discover <query>"
     );
   }
 

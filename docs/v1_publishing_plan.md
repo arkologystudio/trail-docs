@@ -4,7 +4,7 @@
 Ship a stable `v1.0.0` that makes it easier, quicker, and cheaper for agents to use software tools/libraries through a CLI-first docs workflow.
 
 ## Product Positioning for V1
-- Keep `docpilot` core local-first, deterministic, and citation-backed.
+- Keep `doc-nav` core local-first, deterministic, and citation-backed.
 - Add pre-install library research support as an ingestion layer (`discover` + `fetch`) before existing `build/use` flows.
 - Keep external providers optional; do not make any hosted service a hard dependency.
 
@@ -17,7 +17,7 @@ Ship a stable `v1.0.0` that makes it easier, quicker, and cheaper for agents to 
 
 ### P0 (Must ship in V1)
 1. External library discovery command.
-- Add `docpilot discover <query>`.
+- Add `doc-nav discover <query>`.
 - Resolve candidates from all three source classes:
   - package registries (npm, PyPI, crates.io, etc.),
   - official docs URLs,
@@ -25,7 +25,7 @@ Ship a stable `v1.0.0` that makes it easier, quicker, and cheaper for agents to 
 - Return ranked candidates with deterministic JSON fields and confidence.
 
 2. Fetch-and-pin command for pre-install research.
-- Add `docpilot fetch <selector>` where selector can be a discovered candidate, package spec, repo URL, or docs URL.
+- Add `doc-nav fetch <selector>` where selector can be a discovered candidate, package spec, repo URL, or docs URL.
 - Resolve and persist immutable ref:
   - package version + integrity (if available), or
   - commit SHA/tag for git sources.
@@ -64,9 +64,9 @@ Ship a stable `v1.0.0` that makes it easier, quicker, and cheaper for agents to 
 - Error class for ambiguous matches with top 3 suggestions.
 
 3. One-command happy path.
-- Add `docpilot prep <query_or_url> [--version]`:
+- Add `doc-nav prep <query_or_url> [--version]`:
   - discover -> fetch -> build -> emit manifest.
-- Keeps existing `docpilot use` experience unchanged after prep.
+- Keeps existing `doc-nav use` experience unchanged after prep.
 
 ### P2 (Explicitly out of scope for V1)
 - Embeddings/semantic vector search.
@@ -76,12 +76,12 @@ Ship a stable `v1.0.0` that makes it easier, quicker, and cheaper for agents to 
 - Non-markdown universal parsers (full HTML/RTF/AsciiDoc support).
 
 ## Proposed CLI Additions (V1)
-1. `docpilot discover <query> [--ecosystem <name>] [--max-results <n>] [--json]`
-2. `docpilot fetch <selector> [--version <v>] [--ref <sha|tag>] [--out <dir>] [--json]`
-3. `docpilot prep <query_or_url> [--version <v>] [--path <dir>] [--json]` (P1 but recommended)
+1. `doc-nav discover <query> [--ecosystem <name>] [--max-results <n>] [--json]`
+2. `doc-nav fetch <selector> [--version <v>] [--ref <sha|tag>] [--out <dir>] [--json]`
+3. `doc-nav prep <query_or_url> [--version <v>] [--path <dir>] [--json]` (P1 but recommended)
 
 ## Data Contract Additions
-1. Source manifest (`.docpilot/source.json`)
+1. Source manifest (`.doc-nav/source.json`)
 - `source_type`, `canonical_url`, `requested_ref`, `resolved_ref`, `integrity`, `fetched_at`, `provider`, `trust_signals`.
 
 2. Citation extension
@@ -107,7 +107,7 @@ Ship a stable `v1.0.0` that makes it easier, quicker, and cheaper for agents to 
 - Add tests for repeatability and cache hits.
 
 ### Week 3: Security + Provenance + Integration
-- Add policy file support (`docpilot.policy.json`) and safe defaults.
+- Add policy file support (`doc-nav.policy.json`) and safe defaults.
 - Add injection/suspicious-content flagging metadata.
 - Wire provenance through `build`, `cite`, and `use` JSON outputs.
 - Add end-to-end test: unknown library -> discover -> fetch -> build -> use.

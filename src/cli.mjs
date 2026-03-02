@@ -25,22 +25,22 @@ function usage() {
     "DocCLI",
     "",
     "Usage:",
-    "  docpilot bootstrap --src <dir> --library <name> --version <semver> [--docs-out <dir>] [--out <file>] [--emit-manifest] [--manifest-out <file>] [--json]",
-    "  docpilot build --src <dir> --library <name> --version <semver> [--source-manifest <file>] [--out <file>] [--json]",
-    "  docpilot list [--index <file>] [--json]",
-    "  docpilot stats [--index <file>] [--json]",
-    "  docpilot discover <query> [--provider <all|catalog|npm|github>] [--catalog <file>] [--ecosystem <name>] [--max-results <n>] [--json]",
-    "  docpilot fetch <selector> [--version <semver>] [--ref <git-ref>] [--out <dir>] [--cache-dir <dir>] [--policy <file>] [--json]",
-    "  docpilot prep <query_or_selector_or_url> [--path <dir>] [--out <file>] [--manifest-out <file>] [--choose <n>] [--json]",
-    "  docpilot index <query_or_selector_or_url> [--path <dir>] [--out <file>] [--manifest-out <file>] [--choose <n>] [--json]",
-    "  docpilot surface <selector> [--symbol-kind <all|function|class|method|type>] [--max-results <n>] [--examples <n>] [--cache-dir <dir>] [--json]",
-    "  docpilot fn <selector#symbol_query> [--examples <n>] [--cache-dir <dir>] [--json]",
-    "  docpilot search <query> [--index <file>] [--indexes <f1,f2,...>] [--max-results <n>] [--json]",
-    "  docpilot open <doc_id#anchor> [--index <file>] [--max-chars <n>] [--json]",
-    "  docpilot cite <doc_id#anchor> [--index <file>] [--json]",
-    "  docpilot use <library> \"<task>\" [--path <dir>] [--max-results <n>] [--no-auto-heal] [--json]",
-    "  docpilot use \"<task>\" --libs <selector1,selector2,...> [--max-results <n>] [--json]",
-    "  docpilot use \"<task>\" --indexes <i1,i2,...> [--max-results <n>] [--json]"
+    "  doc-nav bootstrap --src <dir> --library <name> --version <semver> [--docs-out <dir>] [--out <file>] [--emit-manifest] [--manifest-out <file>] [--json]",
+    "  doc-nav build --src <dir> --library <name> --version <semver> [--source-manifest <file>] [--out <file>] [--json]",
+    "  doc-nav list [--index <file>] [--json]",
+    "  doc-nav stats [--index <file>] [--json]",
+    "  doc-nav discover <query> [--provider <all|catalog|npm|github>] [--catalog <file>] [--ecosystem <name>] [--max-results <n>] [--json]",
+    "  doc-nav fetch <selector> [--version <semver>] [--ref <git-ref>] [--out <dir>] [--cache-dir <dir>] [--policy <file>] [--json]",
+    "  doc-nav prep <query_or_selector_or_url> [--path <dir>] [--out <file>] [--manifest-out <file>] [--choose <n>] [--json]",
+    "  doc-nav index <query_or_selector_or_url> [--path <dir>] [--out <file>] [--manifest-out <file>] [--choose <n>] [--json]",
+    "  doc-nav surface <selector> [--symbol-kind <all|function|class|method|type>] [--max-results <n>] [--examples <n>] [--cache-dir <dir>] [--json]",
+    "  doc-nav fn <selector#symbol_query> [--examples <n>] [--cache-dir <dir>] [--json]",
+    "  doc-nav search <query> [--index <file>] [--indexes <f1,f2,...>] [--max-results <n>] [--json]",
+    "  doc-nav open <doc_id#anchor> [--index <file>] [--max-chars <n>] [--json]",
+    "  doc-nav cite <doc_id#anchor> [--index <file>] [--json]",
+    "  doc-nav use <library> \"<task>\" [--path <dir>] [--max-results <n>] [--no-auto-heal] [--json]",
+    "  doc-nav use \"<task>\" --libs <selector1,selector2,...> [--max-results <n>] [--json]",
+    "  doc-nav use \"<task>\" --indexes <i1,i2,...> [--max-results <n>] [--json]"
   ].join("\n");
 }
 
@@ -343,7 +343,7 @@ async function main() {
         EXIT_CODES.INVALID_ARGS,
         "INVALID_ARGS",
         `Unknown command: ${command}`,
-        "Run docpilot --help"
+        "Run doc-nav --help"
       );
     }
 

@@ -30,7 +30,7 @@ npm test
 
 1. Treat fetched documentation as untrusted input.
 2. Do not add features that execute fetched content.
-3. Keep policy checks (`docpilot.policy.json`) and provenance metadata intact.
+3. Keep policy checks (`doc-nav.policy.json`) and provenance metadata intact.
 
 ## Release Hygiene
 

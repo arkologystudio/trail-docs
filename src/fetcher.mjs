@@ -42,7 +42,7 @@ function resolvePolicy(policyPath = "") {
     max_total_bytes: DEFAULTS.fetchMaxTotalBytes
   };
 
-  const target = policyPath ? path.resolve(policyPath) : path.resolve("docpilot.policy.json");
+  const target = policyPath ? path.resolve(policyPath) : path.resolve("doc-nav.policy.json");
   if (!fs.existsSync(target)) {
     return defaults;
   }
@@ -87,7 +87,7 @@ function assertHostAllowed(rawUrl, policy) {
       EXIT_CODES.FETCH_BLOCKED,
       "FETCH_BLOCKED",
       `Blocked host by policy: ${host}`,
-      "Update docpilot.policy.json blocked_hosts"
+      "Update doc-nav.policy.json blocked_hosts"
     );
   }
 
@@ -96,7 +96,7 @@ function assertHostAllowed(rawUrl, policy) {
       EXIT_CODES.FETCH_BLOCKED,
       "FETCH_BLOCKED",
       `Host not in allowlist: ${host}`,
-      "Update docpilot.policy.json allowed_hosts"
+      "Update doc-nav.policy.json allowed_hosts"
     );
   }
 }
@@ -105,7 +105,7 @@ async function fetchJson(url, policy) {
   assertHostAllowed(url, policy);
   const response = await fetch(url, {
     headers: {
-      "user-agent": "docpilot/0.1.0",
+      "user-agent": "doc-nav/0.1.0",
       accept: "application/json"
     }
   });
@@ -135,7 +135,7 @@ async function downloadFile(url, targetPath, policy) {
   assertHostAllowed(url, policy);
   const response = await fetch(url, {
     headers: {
-      "user-agent": "docpilot/0.1.0"
+      "user-agent": "doc-nav/0.1.0"
     }
   });
 
@@ -177,7 +177,7 @@ function extractTarball(tarPath, outDir) {
 }
 
 function shouldSkipDirectory(name) {
-  return [".git", "node_modules", ".docpilot", ".next", "dist", "build"].includes(name);
+  return [".git", "node_modules", ".doc-nav", ".next", "dist", "build"].includes(name);
 }
 
 function shouldIncludeFile(relativePath, policy) {
@@ -242,7 +242,7 @@ function copyDocsFromDir(sourceDir, docsDir, policy) {
           EXIT_CODES.POLICY_VIOLATION,
           "POLICY_VIOLATION",
           `Fetch exceeded max_files (${policy.max_files})`,
-          "Adjust docpilot.policy.json max_files"
+          "Adjust doc-nav.policy.json max_files"
         );
       }
 
@@ -251,7 +251,7 @@ function copyDocsFromDir(sourceDir, docsDir, policy) {
           EXIT_CODES.POLICY_VIOLATION,
           "POLICY_VIOLATION",
           `Fetch exceeded max_total_bytes (${policy.max_total_bytes})`,
-          "Adjust docpilot.policy.json max_total_bytes"
+          "Adjust doc-nav.policy.json max_total_bytes"
         );
       }
 
@@ -402,14 +402,14 @@ function cleanDir(dirPath) {
 }
 
 function writeSourceManifest(snapshotDir, payload) {
-  const sourceManifestPath = path.join(snapshotDir, ".docpilot", "source.json");
+  const sourceManifestPath = path.join(snapshotDir, ".doc-nav", "source.json");
   ensureDirForFile(sourceManifestPath);
   fs.writeFileSync(sourceManifestPath, JSON.stringify(payload, null, 2), "utf8");
   return sourceManifestPath;
 }
 
 function createTempDir() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "docpilot-fetch-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "doc-nav-fetch-"));
   return root;
 }
 
@@ -469,7 +469,7 @@ export async function fetchLibrarySource({ selector, flags = {} }) {
       EXIT_CODES.INVALID_ARGS,
       "INVALID_ARGS",
       "Missing selector for fetch",
-      "Usage: docpilot fetch <selector>"
+      "Usage: doc-nav fetch <selector>"
     );
   }
   const policy = resolvePolicy(flags.policy ? String(flags.policy) : "");
@@ -485,7 +485,7 @@ export async function fetchLibrarySource({ selector, flags = {} }) {
     source = await resolveLocalSource(parsed);
   }
 
-  const cacheRoot = flags["cache-dir"] ? path.resolve(String(flags["cache-dir"])) : path.resolve(".docpilot", "cache", "sources");
+  const cacheRoot = flags["cache-dir"] ? path.resolve(String(flags["cache-dir"])) : path.resolve(".doc-nav", "cache", "sources");
   const outRoot = flags.out ? path.resolve(String(flags.out)) : cacheRoot;
 
   let snapshotDir;
