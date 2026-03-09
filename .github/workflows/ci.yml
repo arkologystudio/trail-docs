@@ -27,3 +27,16 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Run eval smoke
+        env:
+          EVAL_MODEL_PROVIDER: mock
+          EVAL_JUDGE_PROVIDER: mock
+        run: npm run eval:smoke:ci
+
+      - name: Upload eval artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-smoke-node-${{ matrix.node-version }}
+          path: eval/results/*.*

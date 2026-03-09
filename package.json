@@ -15,6 +15,10 @@
   ],
   "scripts": {
     "build:index": "node ./src/cli.mjs build --src fixtures/docs --library acme-payments --version 2.4.1 --out .trail-docs/index.json --json",
+    "eval:smoke": "node ./eval/src/run-eval.mjs --profile smoke --allow-missing-context7",
+    "eval:smoke:ci": "node ./eval/src/run-eval.mjs --profile smoke --config eval/config/eval.config.ci.json --allow-missing-context7",
+    "eval:full": "node ./eval/src/run-eval.mjs --profile full",
+    "eval:report": "node ./eval/src/report.mjs",
     "test": "node --test",
     "prepublishOnly": "npm test"
   },

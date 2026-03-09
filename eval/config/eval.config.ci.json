@@ -1,0 +1,54 @@
+{
+  "schema_version": "1",
+  "profiles": {
+    "smoke": {
+      "cases_file": "eval/cases/ci-smoke.jsonl",
+      "passes": 1
+    },
+    "full": {
+      "cases_file": "eval/cases/ci-smoke.jsonl",
+      "passes": 1
+    }
+  },
+  "tools": ["trail-docs", "grep", "context7"],
+  "corpora": [
+    {
+      "id": "fixtures_docs",
+      "type": "local_docs",
+      "src": "fixtures/docs",
+      "library": "acme-payments",
+      "version": "2.4.1"
+    },
+    {
+      "id": "fixtures_codebase",
+      "type": "local_codebase_bootstrap",
+      "src": "fixtures/codebase",
+      "library": "acme-runtime",
+      "version": "0.0.0-derived"
+    },
+    {
+      "id": "repo_docs",
+      "type": "local_docs",
+      "src": "docs",
+      "library": "trail-docs",
+      "version": "workspace"
+    }
+  ],
+  "limits": {
+    "max_context_tokens": 1200,
+    "max_blocks": 6,
+    "grep_window_lines": 5
+  },
+  "answerer": {
+    "provider": "mock",
+    "model": "mock-v1",
+    "temperature": 0,
+    "max_output_tokens": 300
+  },
+  "judge": {
+    "provider": "mock",
+    "model": "mock-v1",
+    "temperature": 0,
+    "max_output_tokens": 200
+  }
+}
