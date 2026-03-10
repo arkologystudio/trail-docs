@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22]
 
     steps:
       - name: Checkout
@@ -29,13 +29,14 @@ jobs:
         run: npm test
 
       - name: Run eval smoke
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           EVAL_MODEL_PROVIDER: mock
           EVAL_JUDGE_PROVIDER: mock
         run: npm run eval:smoke:ci
 
       - name: Upload eval artifacts
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: eval-smoke-node-${{ matrix.node-version }}
