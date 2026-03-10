@@ -132,9 +132,11 @@ export function retrieveWithGrep({ benchCase, corpus, limits }) {
   if (blocks.length === 0) {
     const firstDoc = findFirstDocFileRecursive(corpus.docs_dir);
     if (firstDoc) {
-      const content = fs.readFileSync(firstDoc, "utf8").split("\n").slice(0, 12).join("\n");
+      const previewEnd = 12;
+      const content = fs.readFileSync(firstDoc, "utf8").split("\n").slice(0, previewEnd).join("\n");
       const relative = path.relative(corpus.docs_dir, firstDoc).split(path.sep).join("/");
-      blocks.push({ text: content, citation: relative });
+      // Keep citation shape consistent with search hits: file:start-end.
+      blocks.push({ text: content, citation: `${relative}:1-${previewEnd}` });
     }
   }
 
