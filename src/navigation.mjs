@@ -1,23 +1,89 @@
-import { tokenize } from "./utils.mjs";
+import { stableUnique, tokenize } from "./utils.mjs";
 
 const ACTION_QUERY_PATTERN = /\b(use|run|create|configure|set|install|build|deploy|call|invoke|read|compute|reject|verify|add|remove|update|open|fetch|search)\b/i;
 const SYMBOL_PATTERN = /[A-Za-z_][A-Za-z0-9_]*(?:[.:][A-Za-z_][A-Za-z0-9_]*)+|[A-Za-z_][A-Za-z0-9_]*\([^)]*\)/;
+const EXPLAIN_QUERY_PATTERN = /\b(why|what|explain|difference|compare|meaning|purpose)\b/i;
+
+function parseQueryProfile(query) {
+  const raw = String(query || "");
+  const lower = raw.toLowerCase();
+  const tokens = stableUnique(tokenize(raw));
+  const flags = stableUnique(
+    Array.from(lower.matchAll(/--[a-z0-9-]+/g), (match) => match[0])
+  );
+  const hasQuestion = raw.includes("?");
+  const isHowTo = /\bhow to\b/i.test(raw);
+  const explainIntent = (hasQuestion && !isHowTo) || EXPLAIN_QUERY_PATTERN.test(raw);
+
+  return {
+    raw,
+    tokens,
+    flags,
+    intent: explainIntent ? "explain" : "action"
+  };
+}
+
+function buildTokenStats(index) {
+  const units = index.evidence_units || [];
+  const totalUnits = Math.max(1, units.length);
+  const docFreq = new Map();
+
+  for (const unit of units) {
+    const seen = new Set(unit.keywords || []);
+    for (const token of seen) {
+      docFreq.set(token, (docFreq.get(token) || 0) + 1);
+    }
+  }
+
+  return { totalUnits, docFreq };
+}
+
+function idfWeight(tokenStats, token) {
+  const df = tokenStats.docFreq.get(token) || 0;
+  return Math.log(1 + tokenStats.totalUnits / (df + 1));
+}
+
+function weightedOverlapScore(queryTokens, candidateSet, tokenStats) {
+  if (!queryTokens.length || candidateSet.size === 0) {
+    return 0;
+  }
+
+  let numerator = 0;
+  let denominator = 0;
+  for (const token of queryTokens) {
+    const weight = idfWeight(tokenStats, token);
+    denominator += weight;
+    if (candidateSet.has(token)) {
+      numerator += weight;
+    }
+  }
+
+  if (denominator <= 0) {
+    return 0;
+  }
+  return numerator / denominator;
+}
+
+function isLowSignalCommandText(text) {
+  const value = String(text || "").trim();
+  if (!value) {
+    return false;
+  }
+  const singleLine = !value.includes("\n");
+  if (!singleLine) {
+    return false;
+  }
+  if (/^[./A-Za-z0-9_-]+\.(json|ya?ml|toml|md|txt|ini|cfg|lock)$/i.test(value)) {
+    return true;
+  }
+  if (/^[./A-Za-z0-9_<>-]+\/[A-Za-z0-9_./<>-]+$/.test(value) && !/\s/.test(value)) {
+    return true;
+  }
+  return false;
+}
 
 function keywordSet(value) {
   return new Set(tokenize(String(value || "")));
-}
-
-function overlapScore(querySet, candidateSet) {
-  if (querySet.size === 0 || candidateSet.size === 0) {
-    return 0;
-  }
-  let hits = 0;
-  for (const token of querySet) {
-    if (candidateSet.has(token)) {
-      hits += 1;
-    }
-  }
-  return hits / querySet.size;
 }
 
 function jaccardFromTexts(leftText, rightText) {
@@ -56,7 +122,7 @@ function unitCandidates(index, refs) {
   return (index.evidence_units || []).filter((entry) => targetRefs.has(`${entry.doc_id}#${entry.anchor}`));
 }
 
-function whyMatched({ queryTokens, headingTokens, unit }) {
+function whyMatched({ queryTokens, headingTokens, queryFlags, unit }) {
   const reasons = [];
   const unitTokens = new Set(unit.keywords || []);
   for (const token of queryTokens) {
@@ -69,6 +135,11 @@ function whyMatched({ queryTokens, headingTokens, unit }) {
       reasons.push(`heading:${token}`);
     }
   }
+  for (const flag of queryFlags) {
+    if (String(unit.text || "").toLowerCase().includes(flag)) {
+      reasons.push(`flag:${flag}`);
+    }
+  }
   if (unit.type === "command") {
     reasons.push("command:type");
   }
@@ -78,13 +149,31 @@ function whyMatched({ queryTokens, headingTokens, unit }) {
   return [...new Set(reasons)].slice(0, 8);
 }
 
-function scoreUnit({ query, queryTokens, unit, section }) {
+function scoreUnit({ queryProfile, tokenStats, unit, section }) {
   const unitTokenSet = new Set(unit.keywords || []);
   const headingTokenSet = new Set(tokenize(section?.heading || ""));
-  const lexical = overlapScore(queryTokens, unitTokenSet);
-  const headingBoost = overlapScore(queryTokens, headingTokenSet);
-  const symbolBoost = SYMBOL_PATTERN.test(String(unit.text || "")) && /[A-Za-z_]/.test(String(query || "")) ? 1 : 0;
-  const commandBoost = (unit.type === "command" || unit.type === "step") && ACTION_QUERY_PATTERN.test(String(query || "")) ? 1 : 0;
+  const flagMatched = queryProfile.flags.some((flag) => String(unit.text || "").toLowerCase().includes(flag));
+  let lexical = weightedOverlapScore(queryProfile.tokens, unitTokenSet, tokenStats);
+  let headingBoost = weightedOverlapScore(queryProfile.tokens, headingTokenSet, tokenStats);
+  const symbolBoost =
+    flagMatched
+      ? 1
+      : queryProfile.intent === "action" && SYMBOL_PATTERN.test(String(unit.text || "")) && /[A-Za-z_]/.test(queryProfile.raw)
+        ? 1
+        : 0;
+
+  let commandBoost = 0;
+  if (queryProfile.intent === "action") {
+    commandBoost = (unit.type === "command" || unit.type === "step") && ACTION_QUERY_PATTERN.test(queryProfile.raw) ? 1 : 0;
+  } else if (unit.type === "definition" || unit.type === "constraint") {
+    commandBoost = 0.5;
+  }
+
+  if (queryProfile.intent === "explain" && unit.type === "command" && isLowSignalCommandText(unit.text) && !flagMatched) {
+    lexical *= 0.7;
+    headingBoost *= 0.8;
+  }
+
   const tokenCost = Math.min(1, Math.max(0, Number(unit.token_estimate || 0) / 120));
 
   return {
@@ -201,7 +290,8 @@ function selectByBudget({ candidates, budgetTokens, maxItems }) {
 }
 
 function makeCandidates({ index, query, refs, maxItems }) {
-  const queryTokens = new Set(tokenize(query));
+  const queryProfile = parseQueryProfile(query);
+  const tokenStats = buildTokenStats(index);
   const sectionByRef = sectionMaps(index);
   const units = refs
     ? unitCandidates(index, refs)
@@ -210,7 +300,7 @@ function makeCandidates({ index, query, refs, maxItems }) {
   const candidates = units.map((unit) => {
     const ref = `${unit.doc_id}#${unit.anchor}`;
     const section = sectionByRef.get(ref);
-    const parts = scoreUnit({ query, queryTokens, unit, section });
+    const parts = scoreUnit({ queryProfile, tokenStats, unit, section });
     const baseScore = scoreWithoutNovelty(parts);
     return {
       unit,
@@ -218,15 +308,16 @@ function makeCandidates({ index, query, refs, maxItems }) {
       parts,
       base_score: Number(baseScore.toFixed(4)),
       why: whyMatched({
-        queryTokens,
+        queryTokens: queryProfile.tokens,
         headingTokens: new Set(tokenize(section?.heading || "")),
+        queryFlags: queryProfile.flags,
         unit
       })
     };
   });
 
   candidates.sort(stableCandidateSort);
-  return candidates.slice(0, Math.max(maxItems * 10, maxItems));
+  return candidates.slice(0, Math.max(maxItems * 20, maxItems));
 }
 
 function defaultBudget(value) {
@@ -269,7 +360,11 @@ export function findNavigation({ index, query, budget, maxItems }) {
   }
 
   const orderedRefs = [...grouped.entries()]
-    .map(([ref, entries]) => ({ ref, score: entries[0]?.base_score || 0 }))
+    .map(([ref, entries]) => {
+      const head = entries[0]?.base_score || 0;
+      const second = entries[1]?.base_score || 0;
+      return { ref, score: Number((head + second * 0.35).toFixed(4)) };
+    })
     .sort((left, right) => {
       if (left.score !== right.score) {
         return right.score - left.score;

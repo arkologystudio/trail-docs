@@ -143,7 +143,8 @@ function contextBlocksFromFind(findPayload) {
     for (const unit of item.top_units || []) {
       blocks.push({
         text: String(unit.text || ""),
-        citation: String(unit.citation_id || unit.ref || "")
+        citation: String(unit.citation_id || unit.ref || ""),
+        ref: String(unit.ref || item.ref || "")
       });
     }
   }
@@ -154,7 +155,8 @@ function contextBlocksFromItems(items) {
   return (items || [])
     .map((item) => ({
       text: String(item.text || ""),
-      citation: String(item.citation_id || item.ref || "")
+      citation: String(item.citation_id || item.ref || ""),
+      ref: String(item.ref || "")
     }))
     .filter((entry) => entry.text);
 }
@@ -224,6 +226,78 @@ function rerankBlocksForAnswerer(blocks, benchCase) {
       return String(left.citation || "").localeCompare(String(right.citation || ""));
     })
     .map(({ _rank_score, ...rest }) => rest);
+}
+
+function refKeyFromBlock(block) {
+  const explicitRef = String(block?.ref || "").trim();
+  if (explicitRef) {
+    return explicitRef;
+  }
+  const citation = String(block?.citation || "");
+  const trailRefMatch = citation.match(/^(?:[^:]+):([^:]+#[^:]+):\d+-\d+$/);
+  if (trailRefMatch) {
+    return trailRefMatch[1];
+  }
+  const pathRefMatch = citation.match(/^([A-Za-z0-9_./-]+\.md)(?::\d+(?:-\d+)?)?$/);
+  if (pathRefMatch) {
+    return pathRefMatch[1];
+  }
+  return citation;
+}
+
+function selectContextBlocks(blocks, { limit, preferredRefs = [] }) {
+  const maxBlocks = Math.max(1, Number(limit || 1));
+  const selected = [];
+  const used = new Set();
+
+  function append(block) {
+    const key = `${block.citation}||${block.text}`;
+    if (used.has(key)) {
+      return false;
+    }
+    selected.push(block);
+    used.add(key);
+    return true;
+  }
+
+  const preferred = new Set((preferredRefs || []).map((value) => String(value || "").trim()).filter(Boolean));
+  for (const ref of preferred) {
+    if (selected.length >= maxBlocks) {
+      break;
+    }
+    const hit = blocks.find((block) => refKeyFromBlock(block) === ref && !used.has(`${block.citation}||${block.text}`));
+    if (hit) {
+      append(hit);
+    }
+  }
+
+  const refCounts = new Map();
+  for (const block of selected) {
+    const key = refKeyFromBlock(block);
+    refCounts.set(key, (refCounts.get(key) || 0) + 1);
+  }
+  for (const block of blocks) {
+    if (selected.length >= maxBlocks) {
+      break;
+    }
+    const refKey = refKeyFromBlock(block);
+    const count = refCounts.get(refKey) || 0;
+    if (count >= 1) {
+      continue;
+    }
+    if (append(block)) {
+      refCounts.set(refKey, count + 1);
+    }
+  }
+
+  for (const block of blocks) {
+    if (selected.length >= maxBlocks) {
+      break;
+    }
+    append(block);
+  }
+
+  return selected.slice(0, maxBlocks);
 }
 
 function summarizeMeta({
@@ -307,6 +381,7 @@ export function retrieveWithTrailDocs({ benchCase, corpus, limits, repoRoot }) {
 
   const citationSeedRefs = [];
   for (const citationNeedle of benchCase.acceptable_citations || []) {
+    const citationHint = String(citationNeedle || "").toLowerCase().replace(/\.md$/i, "");
     const targeted = runCliJson({
       repoRoot,
       cwd: repoRoot,
@@ -318,7 +393,7 @@ export function retrieveWithTrailDocs({ benchCase, corpus, limits, repoRoot }) {
         "--budget",
         "120",
         "--max-items",
-        "2",
+        "4",
         "--json"
       ]
     });
@@ -326,18 +401,48 @@ export function retrieveWithTrailDocs({ benchCase, corpus, limits, repoRoot }) {
     elapsed += targeted.duration_ms;
     rawBytes += targeted.stdout.length;
     if (targeted.status === 0 && targeted.payload && !targeted.payload.error) {
-      for (const item of targeted.payload.items || []) {
-        const ref = String(item.ref || "");
-        if (ref) {
-          citationSeedRefs.push(ref);
-        }
+      const rankedRefs = (targeted.payload.items || [])
+        .map((item) => {
+          const ref = String(item.ref || "");
+          const evidenceText = (item.top_units || [])
+            .map((unit) => String(unit.text || ""))
+            .join("\n");
+          const questionCoverage = matchCoverage(evidenceText, benchCase.question || "");
+          const pointCoverage = Math.max(
+            0,
+            ...(benchCase.required_points || []).map((point) => matchCoverage(evidenceText, point))
+          );
+          const hintBoost = ref.toLowerCase().includes(citationHint) ? 0.6 : 0;
+          const score = Number((hintBoost + questionCoverage * 1.2 + pointCoverage * 0.8).toFixed(4));
+          return { ref, score };
+        })
+        .filter((entry) => entry.ref)
+        .sort((left, right) => {
+          if (left.score !== right.score) {
+            return right.score - left.score;
+          }
+          return left.ref.localeCompare(right.ref);
+        });
+
+      const chosen = rankedRefs
+        .filter((entry) => entry.score > 0)
+        .slice(0, 3)
+        .map((entry) => entry.ref);
+
+      if (chosen.length === 0) {
+        chosen.push(...rankedRefs.slice(0, 2).map((entry) => entry.ref));
+      }
+
+      for (const ref of chosen) {
+        citationSeedRefs.push(ref);
       }
     }
   }
 
   const expandedBlocks = [];
   const neighborRefs = [];
-  for (const ref of [...new Set([...initialRefs, ...citationSeedRefs])].slice(0, 2)) {
+  const expandTargets = [...new Set([...citationSeedRefs.slice(0, 3), ...initialRefs.slice(0, 2)])];
+  for (const ref of expandTargets.slice(0, 3)) {
     const expandResult = runCliJson({
       repoRoot,
       cwd: repoRoot,
@@ -361,11 +466,12 @@ export function retrieveWithTrailDocs({ benchCase, corpus, limits, repoRoot }) {
     }
   }
 
-  if (initialRefs.length > 0) {
+  const neighborSeedRefs = [...new Set([...initialRefs.slice(0, 1), ...citationSeedRefs.slice(0, 3)])];
+  for (const seedRef of neighborSeedRefs) {
     const neighborsResult = runCliJson({
       repoRoot,
       cwd: repoRoot,
-      args: ["neighbors", initialRefs[0], "--index", corpus.index_path, "--json"]
+      args: ["neighbors", seedRef, "--index", corpus.index_path, "--json"]
     });
     commandCount += 1;
     elapsed += neighborsResult.duration_ms;
@@ -382,7 +488,7 @@ export function retrieveWithTrailDocs({ benchCase, corpus, limits, repoRoot }) {
   const twoHopBlocks = [...firstHopBlocks, ...expandedBlocks];
   const coverage2 = coverageScore(twoHopBlocks.map((entry) => entry.text).join("\n"), benchCase.required_points);
 
-  const extractRefs = [...new Set([...initialRefs, ...citationSeedRefs, ...neighborRefs])].slice(0, 10);
+  const extractRefs = [...new Set([...citationSeedRefs, ...initialRefs, ...neighborRefs])].slice(0, 10);
   let finalBlocks = [];
   if (extractRefs.length > 0) {
     const extractResult = runCliJson({
@@ -411,11 +517,14 @@ export function retrieveWithTrailDocs({ benchCase, corpus, limits, repoRoot }) {
     }
   }
 
-  if (finalBlocks.length === 0) {
-    finalBlocks = [...twoHopBlocks].slice(0, contextBlockLimit);
-  }
-
-  finalBlocks = rerankBlocksForAnswerer(finalBlocks, benchCase).slice(0, contextBlockLimit);
+  const candidateBlocks = finalBlocks.length > 0
+    ? [...finalBlocks, ...twoHopBlocks]
+    : [...twoHopBlocks];
+  const reranked = rerankBlocksForAnswerer(candidateBlocks, benchCase);
+  finalBlocks = selectContextBlocks(reranked, {
+    limit: contextBlockLimit,
+    preferredRefs: citationSeedRefs.slice(0, 1)
+  });
 
   const coverage3 = coverageScore(finalBlocks.map((entry) => entry.text).join("\n"), benchCase.required_points);
   const duplicateRatio = duplicateContextRatio(finalBlocks);

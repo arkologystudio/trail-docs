@@ -3,7 +3,7 @@ import { hashText, normalizeAnchor, tokenize, truncate } from "./utils.mjs";
 const CONSTRAINT_PATTERN = /\b(must|required|ensure|never|cannot|can't|do not|don't|should not)\b/i;
 const DEFINITION_PATTERN = /\b(is|means|defined as|refers to)\b/i;
 const STEP_VERB_PATTERN = /^(use|run|create|configure|set|install|build|deploy|call|invoke|read|compute|reject|verify|add|remove|update|open|fetch|search)\b/i;
-const COMMAND_LIKE_PATTERN = /\s|^(npm|yarn|pnpm|npx|node|curl|git|docker|python|pip|go|cargo|make|kubectl|helm|aws|gcloud|az|trail-docs|\.|\/)/i;
+const COMMAND_START_PATTERN = /^(npm|yarn|pnpm|npx|node|curl|git|docker|python|pip|go|cargo|make|kubectl|helm|aws|gcloud|az|trail-docs|bash|sh|zsh|\.\/|\/)/i;
 const SYMBOL_PATTERN = /\b[A-Za-z_][A-Za-z0-9_]*(?:[.:][A-Za-z_][A-Za-z0-9_]*)+\b|\b[A-Za-z_][A-Za-z0-9_]*\([^)]*\)/g;
 
 function tokenEstimate(value) {
@@ -181,7 +181,7 @@ function collectInlineCommandUnits({ library, version, doc_id, anchor, bodyLines
     const matches = text.match(/`([^`]+)`/g) || [];
     for (const raw of matches) {
       const candidate = raw.slice(1, -1).trim();
-      if (!candidate || !COMMAND_LIKE_PATTERN.test(candidate)) {
+      if (!candidate || !isLikelyInlineCommand(candidate)) {
         continue;
       }
       const normalized = truncate(candidate, 440);
@@ -206,6 +206,37 @@ function collectInlineCommandUnits({ library, version, doc_id, anchor, bodyLines
   }
 
   return units;
+}
+
+function isLikelyInlineCommand(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return false;
+  }
+
+  const hasSpace = /\s/.test(text);
+  const first = text.split(/\s+/)[0].replace(/^['"]|['"]$/g, "");
+  const hasKnownStart = COMMAND_START_PATTERN.test(first);
+  const hasOperator = /(\|\||&&|\||>|<|\$\(|;)/.test(text);
+  const hasFlag = /(^|\s)--[a-z0-9-]+/.test(text);
+  const looksLikeFile = /^[./A-Za-z0-9_-]+\.(json|ya?ml|toml|md|txt|ini|cfg|lock)$/i.test(text);
+  const looksLikePathOnly = /^[./A-Za-z0-9_<>-]+\/[A-Za-z0-9_./<>-]+$/.test(text) && !hasSpace;
+  if ((looksLikeFile || looksLikePathOnly) && !hasFlag && !hasKnownStart) {
+    return false;
+  }
+
+  if (hasKnownStart) {
+    if (/^trail-docs$/i.test(first) && !hasSpace && !hasFlag && !hasOperator) {
+      return false;
+    }
+    return true;
+  }
+
+  if (hasFlag && hasSpace) {
+    return true;
+  }
+
+  return false;
 }
 
 function uniqueUnits(units) {
