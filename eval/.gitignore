@@ -1,0 +1,6 @@
+.cache/
+.env
+results/*.raw.jsonl
+results/*.summary.json
+results/*.report.md
+!results/.gitkeep

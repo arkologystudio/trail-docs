@@ -1,0 +1,73 @@
+{
+  "schema_version": "1",
+  "profiles": {
+    "smoke": {
+      "cases_file": "eval/cases/smoke.jsonl",
+      "passes": 1
+    },
+    "iterative-smoke": {
+      "cases_file": "eval/cases/iterative-smoke.jsonl",
+      "passes": 1
+    },
+    "full": {
+      "cases_file": "eval/cases/full.jsonl",
+      "passes": 2
+    }
+  },
+  "tools": ["trail-docs", "grep", "context7"],
+  "corpora": [
+    {
+      "id": "openclaw",
+      "type": "external_selector",
+      "selector": "github:openclaw/openclaw",
+      "library": "openclaw"
+    },
+    {
+      "id": "langgraph",
+      "type": "external_selector",
+      "selector": "github:langchain-ai/langgraph",
+      "library": "langgraph"
+    },
+    {
+      "id": "mcp_python_sdk",
+      "type": "external_selector",
+      "selector": "github:modelcontextprotocol/python-sdk",
+      "library": "mcp-python-sdk"
+    },
+    {
+      "id": "vercel_ai",
+      "type": "external_selector",
+      "selector": "github:vercel/ai",
+      "library": "vercel-ai"
+    },
+    {
+      "id": "openai_agents",
+      "type": "external_selector",
+      "selector": "github:openai/openai-agents-python",
+      "library": "openai-agents"
+    },
+    {
+      "id": "anthropic_agent_sdk",
+      "type": "external_selector",
+      "selector": "github:anthropics/anthropic-sdk-python",
+      "library": "anthropic-agent-sdk"
+    }
+  ],
+  "limits": {
+    "max_context_tokens": 1600,
+    "max_blocks": 8,
+    "grep_window_lines": 5
+  },
+  "answerer": {
+    "provider": "openai",
+    "model": "gpt-4.1-mini",
+    "temperature": 0,
+    "max_output_tokens": 500
+  },
+  "judge": {
+    "provider": "openai",
+    "model": "gpt-4.1-mini",
+    "temperature": 0,
+    "max_output_tokens": 300
+  }
+}

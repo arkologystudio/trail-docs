@@ -1,4 +1,4 @@
-export const TOOL_VERSION = "0.1.0";
+export const TOOL_VERSION = "1.0.0";
 
 export const EXIT_CODES = {
   INVALID_ARGS: 2,

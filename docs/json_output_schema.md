@@ -1,10 +1,8 @@
-# Trail Docs JSON Output Schema (v0.1.x)
+# Trail Docs JSON Output Schema (v2)
 
-This document defines the JSON shape for each `trail-docs` command when `--json` is used.
+This document defines JSON payloads emitted by `trail-docs` when `--json` is used.
 
 ## Error Envelope
-
-All commands can return this payload on failure:
 
 ```json
 {
@@ -13,6 +11,189 @@ All commands can return this payload on failure:
     "message": "Human-readable error",
     "hint": "Optional recovery hint"
   }
+}
+```
+
+## Common Navigation Envelope
+
+Commands: `find`, `search`, `expand`, `extract`
+
+```json
+{
+  "library": "string",
+  "version": "string",
+  "query": "string",
+  "items": [
+    {
+      "ref": "doc_id#anchor",
+      "unit_id": "unit_xxx",
+      "type": "fact|step|command|constraint|definition",
+      "text": "string",
+      "citation_id": "library@version:doc#anchor:start-end",
+      "token_estimate": 0,
+      "source_path": "string",
+      "line_start": 0,
+      "line_end": 0,
+      "confidence_lexical": 0,
+      "why_matched": ["token:auth", "heading:oauth"],
+      "score": 0,
+      "score_components": {
+        "lexical": 0,
+        "heading_boost": 0,
+        "symbol_boost": 0,
+        "command_boost": 0,
+        "novelty_penalty": 0,
+        "token_cost_penalty": 0
+      }
+    }
+  ],
+  "budget_tokens": 0,
+  "spent_tokens": 0,
+  "remaining_tokens": 0
+}
+```
+
+## `find` / `search`
+
+`search` is an alias of `find` and returns compact start points:
+
+```json
+{
+  "library": "string",
+  "version": "string",
+  "query": "string",
+  "items": [
+    {
+      "ref": "doc_id#anchor",
+      "est_tokens": 0,
+      "why_matched": ["token:refresh"],
+      "top_units": [
+        {
+          "ref": "doc_id#anchor",
+          "unit_id": "unit_xxx",
+          "type": "step",
+          "text": "string",
+          "citation_id": "string",
+          "token_estimate": 0,
+          "source_path": "string",
+          "line_start": 0,
+          "line_end": 0,
+          "confidence_lexical": 0,
+          "why_matched": ["token:refresh"],
+          "score": 0,
+          "score_components": {}
+        }
+      ]
+    }
+  ],
+  "budget_tokens": 0,
+  "spent_tokens": 0,
+  "remaining_tokens": 0
+}
+```
+
+## `expand`
+
+Expands a single anchor (`ref`) under a hard budget:
+
+```json
+{
+  "library": "string",
+  "version": "string",
+  "query": "",
+  "ref": "doc_id#anchor",
+  "items": ["...unit items..."],
+  "budget_tokens": 0,
+  "spent_tokens": 0,
+  "remaining_tokens": 0
+}
+```
+
+## `extract`
+
+Query-conditioned extraction from explicit refs (`--from`):
+
+```json
+{
+  "library": "string",
+  "version": "string",
+  "query": "string",
+  "refs": ["doc#anchor", "doc#anchor"],
+  "items": ["...unit items..."],
+  "budget_tokens": 0,
+  "spent_tokens": 0,
+  "remaining_tokens": 0
+}
+```
+
+## `neighbors`
+
+```json
+{
+  "library": "string",
+  "version": "string",
+  "ref": "doc_id#anchor",
+  "items": [
+    {
+      "ref": "doc_id#anchor",
+      "edge_type": "heading_adjacent|intra_doc_link|keyword_overlap|symbol_overlap"
+    }
+  ],
+  "budget_tokens": 0,
+  "spent_tokens": 0,
+  "remaining_tokens": 0
+}
+```
+
+## `open`
+
+### `open --mode units` (default)
+
+```json
+{
+  "library": "string",
+  "version": "string",
+  "mode": "units",
+  "ref": "doc_id#anchor",
+  "items": ["...unit items..."],
+  "budget_tokens": 0,
+  "spent_tokens": 0,
+  "remaining_tokens": 0
+}
+```
+
+### `open --mode section`
+
+```json
+{
+  "library": "string",
+  "version": "string",
+  "mode": "section",
+  "ref": "doc_id#anchor",
+  "doc_id": "string",
+  "anchor": "string",
+  "heading": "string",
+  "content": "string",
+  "code_blocks": ["string"],
+  "source_path": "string",
+  "line_start": 0,
+  "line_end": 0
+}
+```
+
+## `trail`
+
+State model persisted in `.trail-docs/trails/<trail_id>.json`.
+
+```json
+{
+  "trail_id": "trail_xxx",
+  "objective": "string",
+  "created_at": "ISO-8601",
+  "updated_at": "ISO-8601",
+  "visited_refs": ["doc#anchor"],
+  "pinned_evidence": ["library@version:doc#anchor:start-end"],
+  "coverage_tags": ["string"]
 }
 ```
 
@@ -31,305 +212,21 @@ All commands can return this payload on failure:
 }
 ```
 
-## `bootstrap`
-
-```json
-{
-  "ok": true,
-  "confidence": "partial",
-  "generated_docs_dir": "string",
-  "generated_docs_file": "string",
-  "source_files_scanned": 0,
-  "symbols_detected": 0,
-  "routes_detected": 0,
-  "env_vars_detected": 0,
-  "signals_detected": 0,
-  "index_path": "string",
-  "manifest_path": "string",
-  "docs_count": 0,
-  "sections_count": 0,
-  "source_hash": "sha256:..."
-}
-```
-
-## `list`
-
-```json
-{
-  "library": "string",
-  "version": "string",
-  "docs": [
-    {
-      "doc_id": "string",
-      "title": "string",
-      "source_path": "string",
-      "sections": 0
-    }
-  ]
-}
-```
-
 ## `stats`
 
 ```json
 {
+  "schema_version": "2",
   "library": "string",
   "version": "string",
   "docs_count": 0,
   "sections_count": 0,
+  "evidence_units_count": 0,
+  "anchors_count": 0,
   "code_blocks_count": 0,
   "sections_per_doc": 0,
-  "built_at": "ISO-8601 timestamp",
-  "source_hash": "sha256:...",
-  "inferred": false,
-  "derivation": "optional string",
-  "source": {
-    "source_type": "string",
-    "provider": "string",
-    "canonical_url": "string",
-    "requested_ref": "string",
-    "resolved_ref": "string",
-    "integrity": "string",
-    "fetched_at": "ISO-8601 timestamp",
-    "snapshot_dir": "string",
-    "docs_dir": "string",
-    "trust_signals": {}
-  }
-}
-```
-
-## `discover`
-
-```json
-{
-  "query": "string",
-  "provider": "all|catalog|npm|github",
-  "ecosystem": "string",
-  "candidates": [
-    {
-      "name": "string",
-      "selector": "string",
-      "source_type": "registry|github|docs|catalog",
-      "ecosystem": "string",
-      "canonical_url": "string",
-      "description": "string",
-      "versions": ["string"],
-      "trust_score": 0,
-      "benchmark_score": 0,
-      "confidence": 0
-    }
-  ]
-}
-```
-
-## `fetch`
-
-```json
-{
-  "ok": true,
-  "selector": "string",
-  "library": "string",
-  "version": "string",
-  "source_type": "registry|github|docs|local",
-  "canonical_url": "string",
-  "requested_ref": "string",
-  "resolved_ref": "string",
-  "integrity": "string",
-  "snapshot_dir": "string",
-  "docs_dir": "string",
-  "source_manifest_path": "string",
-  "files_copied": 0,
-  "total_bytes": 0,
-  "trust_signals": {
-    "suspicious_count": 0,
-    "suspicious_files": [
-      {
-        "path": "string",
-        "patterns": ["regex-source"]
-      }
-    ]
-  },
-  "cache_hit": false
-}
-```
-
-## `prep` / `index`
-
-```json
-{
-  "ok": true,
-  "query": "string",
-  "selector": "string",
-  "library": "string",
-  "version": "string",
-  "index_path": "string",
-  "manifest_path": "string",
-  "source_manifest_path": "string",
-  "docs_dir": "string",
-  "source": {
-    "source_type": "string",
-    "canonical_url": "string",
-    "resolved_ref": "string"
-  },
-  "discovered": {
-    "query": "string",
-    "candidates": []
-  }
-}
-```
-
-## `surface`
-
-```json
-{
-  "ok": true,
-  "selector": "string",
-  "library": "string",
-  "version": "string",
-  "confidence": "authoritative|partial",
-  "source": {
-    "source_type": "local|registry|github|docs",
-    "provider": "local|npm|github|url",
-    "canonical_url": "string",
-    "resolved_ref": "string",
-    "snapshot_dir": "optional string"
-  },
-  "exports": [
-    {
-      "export_name": "string",
-      "kind": "function|class|method|type",
-      "symbol_id": "string"
-    }
-  ],
-  "symbols": [
-    {
-      "symbol_id": "string",
-      "name": "string",
-      "fq_name": "string",
-      "kind": "function|class|method|type",
-      "signatures": ["string"],
-      "summary": "string",
-      "module_path": "string",
-      "line_start": 0,
-      "line_end": 0,
-      "examples": [
-        {
-          "code": "string",
-          "source_path": "string",
-          "line_start": 0,
-          "line_end": 0
-        }
-      ]
-    }
-  ],
-  "stats": {
-    "modules_scanned": 0,
-    "symbols_extracted": 0,
-    "bytes_scanned": 0
-  },
-  "cache_hit": false
-}
-```
-
-## `fn`
-
-```json
-{
-  "selector": "string",
-  "symbol_query": "string",
-  "match_type": "exact|prefix|fuzzy",
-  "symbol": {
-    "symbol_id": "string",
-    "fq_name": "string",
-    "kind": "function|class|method|type",
-    "signatures": ["string"],
-    "summary": "string"
-  },
-  "citations": ["string"],
-  "citation_details": [
-    {
-      "citation_id": "string",
-      "source_path": "string",
-      "line_start": 0,
-      "line_end": 0,
-      "provenance": {}
-    }
-  ],
-  "examples": [
-    {
-      "code": "string",
-      "source_path": "string",
-      "line_start": 0,
-      "line_end": 0
-    }
-  ]
-}
-```
-
-## `search`
-
-```json
-{
-  "query": "string",
-  "library": "string",
-  "version": "string",
-  "results": [
-    {
-      "score": 0,
-      "doc_id": "string",
-      "anchor": "string",
-      "heading": "string",
-      "snippet": "string",
-      "source_path": "string",
-      "line_start": 0,
-      "line_end": 0
-    }
-  ]
-}
-```
-
-### `search` federated mode (`--indexes`)
-
-```json
-{
-  "query": "string",
-  "mode": "federated",
-  "indexes": ["string"],
-  "results": [
-    {
-      "score": 0,
-      "library": "string",
-      "version": "string",
-      "doc_id": "string",
-      "anchor": "string",
-      "citation_id": "string"
-    }
-  ]
-}
-```
-
-## `open`
-
-```json
-{
-  "library": "string",
-  "version": "string",
-  "doc_id": "string",
-  "anchor": "string",
-  "heading": "string",
-  "content": "string",
-  "code_blocks": ["string"],
-  "source_path": "string",
-  "line_start": 0,
-  "line_end": 0,
-  "provenance": {
-    "source_type": "string",
-    "provider": "string",
-    "canonical_url": "string",
-    "requested_ref": "string",
-    "resolved_ref": "string",
-    "fetched_at": "ISO-8601 timestamp"
-  }
+  "built_at": "ISO-8601",
+  "source_hash": "sha256:..."
 }
 ```
 
@@ -347,85 +244,3 @@ All commands can return this payload on failure:
   "line_end": 0
 }
 ```
-
-## `use`
-
-```json
-{
-  "task": "string",
-  "library": "string",
-  "version": "string",
-  "confidence": "authoritative|partial",
-  "steps": [
-    {
-      "id": "step_1",
-      "instruction": "string",
-      "confidence": 0,
-      "command": "optional string",
-      "prerequisites": "optional string",
-      "expected": "optional string",
-      "citations": ["citation_id"]
-    }
-  ],
-  "snippet": "string",
-  "citations": ["citation_id"],
-  "citation_details": [
-    {
-      "citation_id": "string",
-      "provenance": {}
-    }
-  ],
-  "related_docs": ["doc_id"]
-}
-```
-
-## `use` (multi-library mode)
-
-```json
-{
-  "task": "string",
-  "mode": "multi_library",
-  "recommendations": [
-    {
-      "rank": 1,
-      "selector": "string",
-      "library": "string",
-      "symbol_id": "string",
-      "fq_name": "string",
-      "signature": "string",
-      "confidence": 0,
-      "why": "string",
-      "citation_id": "string"
-    }
-  ],
-  "alternatives": [],
-  "considered_libraries": ["string"]
-}
-```
-
-## `use` (federated docs mode)
-
-```json
-{
-  "task": "string",
-  "mode": "federated_docs",
-  "confidence": "authoritative|partial",
-  "indexes": ["string"],
-  "steps": [
-    {
-      "id": "step_1",
-      "library": "string",
-      "version": "string",
-      "instruction": "string",
-      "confidence": 0,
-      "citations": ["citation_id"]
-    }
-  ],
-  "citations": ["citation_id"]
-}
-```
-
-Notes:
-- Optional fields may be omitted when no signal is available.
-- Numeric scores are relative relevance/confidence and not calibrated probabilities.
-- When an index is bootstrap-derived (`build.inferred=true`), `use` returns overall `"confidence": "partial"` even when step-level scores are present.

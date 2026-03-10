@@ -70,12 +70,6 @@ export function applyConfigDefaults({ command, positionals, flags, config }) {
     nextFlags.indexes = config.federation.indexes.map((entry) => String(entry)).join(",");
   }
 
-  if (command === "use" && !nextFlags.libs && !nextFlags.indexes) {
-    if (nextPositionals.length === 1 && typeof config.library === "string" && config.library.trim()) {
-      nextFlags["default-library"] = config.library.trim();
-    }
-  }
-
   return {
     positionals: nextPositionals,
     flags: nextFlags

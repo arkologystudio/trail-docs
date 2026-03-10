@@ -8,16 +8,20 @@ import {
   runBuild,
   runCite,
   runDiscover,
+  runExpand,
+  runExtract,
   runFetch,
+  runFind,
   runIndex,
   runFn,
   runList,
+  runNeighbors,
   runOpen,
   runPrep,
   runSearch,
   runSurface,
   runStats,
-  runUse
+  runTrail
 } from "./commands.mjs";
 
 function usage() {
@@ -35,12 +39,18 @@ function usage() {
     "  trail-docs index <query_or_selector_or_url> [--path <dir>] [--out <file>] [--manifest-out <file>] [--choose <n>] [--json]",
     "  trail-docs surface <selector> [--symbol-kind <all|function|class|method|type>] [--max-results <n>] [--examples <n>] [--cache-dir <dir>] [--json]",
     "  trail-docs fn <selector#symbol_query> [--examples <n>] [--cache-dir <dir>] [--json]",
-    "  trail-docs search <query> [--index <file>] [--indexes <f1,f2,...>] [--max-results <n>] [--json]",
-    "  trail-docs open <doc_id#anchor> [--index <file>] [--max-chars <n>] [--json]",
+    "  trail-docs find <query> [--index <file>] [--budget <tokens>] [--max-items <n>] [--json]",
+    "  trail-docs search <query> [--index <file>] [--budget <tokens>] [--max-items <n>] [--json]",
+    "  trail-docs expand <doc_id#anchor> [--index <file>] [--budget <tokens>] [--max-items <n>] [--json]",
+    "  trail-docs neighbors <doc_id#anchor> [--index <file>] [--json]",
+    "  trail-docs extract <query> --from <ref1,ref2,...> [--index <file>] [--budget <tokens>] [--max-items <n>] [--json]",
+    "  trail-docs open <doc_id#anchor> [--index <file>] [--mode <section|units>] [--budget <tokens>] [--max-items <n>] [--json]",
     "  trail-docs cite <doc_id#anchor> [--index <file>] [--json]",
-    "  trail-docs use <library> \"<task>\" [--path <dir>] [--max-results <n>] [--no-auto-heal] [--json]",
-    "  trail-docs use \"<task>\" --libs <selector1,selector2,...> [--max-results <n>] [--json]",
-    "  trail-docs use \"<task>\" --indexes <i1,i2,...> [--max-results <n>] [--json]"
+    "  trail-docs trail create --objective \"<text>\" [--trail <id>] [--json]",
+    "  trail-docs trail add --trail <id> --ref <doc_id#anchor> [--index <file>] [--json]",
+    "  trail-docs trail pin --trail <id> --citation <citation_id> [--json]",
+    "  trail-docs trail tag --trail <id> --tag <tag> [--json]",
+    "  trail-docs trail show --trail <id> [--json]"
   ].join("\n");
 }
 
@@ -73,27 +83,45 @@ function printHuman(command, payload) {
     return;
   }
 
-  if (command === "search") {
-    if (payload.mode === "federated") {
-      console.log(`Federated results for "${payload.query}":`);
-      if (!Array.isArray(payload.results) || payload.results.length === 0) {
-        console.log("No matches.");
-        return;
-      }
-      for (const result of payload.results) {
-        console.log(
-          `- [${result.score}] ${result.library}@${result.version} :: ${result.doc_id}#${result.anchor}`
-        );
-      }
-      return;
-    }
+  if (command === "find" || command === "search") {
     console.log(`Results for "${payload.query}" in ${payload.library}@${payload.version}:`);
-    if (payload.results.length === 0) {
+    if (!Array.isArray(payload.items) || payload.items.length === 0) {
       console.log("No matches.");
       return;
     }
-    for (const result of payload.results) {
-      console.log(`- [${result.score}] ${result.doc_id}#${result.anchor} :: ${result.heading}`);
+    for (const item of payload.items) {
+      console.log(`- ${item.ref} [est_tokens=${item.est_tokens}]`);
+      if (Array.isArray(item.top_units)) {
+        for (const unit of item.top_units) {
+          console.log(`  • ${unit.type} [${unit.score}] ${unit.text}`);
+        }
+      }
+    }
+    return;
+  }
+
+  if (command === "expand" || command === "extract") {
+    console.log(`${command} in ${payload.library}@${payload.version}`);
+    if (!Array.isArray(payload.items) || payload.items.length === 0) {
+      console.log("No evidence units selected.");
+      return;
+    }
+    for (const item of payload.items) {
+      console.log(`- ${item.ref} [${item.type}] [${item.score}] ${item.text}`);
+      console.log(`  cite: ${item.citation_id}`);
+    }
+    console.log(`Budget: ${payload.spent_tokens}/${payload.budget_tokens}`);
+    return;
+  }
+
+  if (command === "neighbors") {
+    console.log(`Neighbors for ${payload.ref} in ${payload.library}@${payload.version}`);
+    if (!Array.isArray(payload.items) || payload.items.length === 0) {
+      console.log("No neighbors.");
+      return;
+    }
+    for (const item of payload.items) {
+      console.log(`- ${item.edge_type}: ${item.ref}`);
     }
     return;
   }
@@ -172,8 +200,17 @@ function printHuman(command, payload) {
   }
 
   if (command === "open") {
-    console.log(`${payload.doc_id}#${payload.anchor} (${payload.source_path}:${payload.line_start})`);
-    console.log(payload.content);
+    if (payload.mode === "section") {
+      console.log(`${payload.doc_id}#${payload.anchor} (${payload.source_path}:${payload.line_start})`);
+      console.log(payload.content);
+      return;
+    }
+    console.log(`Units for ${payload.ref} in ${payload.library}@${payload.version}`);
+    for (const item of payload.items || []) {
+      console.log(`- [${item.type}] ${item.text}`);
+      console.log(`  cite: ${item.citation_id}`);
+    }
+    console.log(`Budget: ${payload.spent_tokens}/${payload.budget_tokens}`);
     return;
   }
 
@@ -183,64 +220,12 @@ function printHuman(command, payload) {
     return;
   }
 
-  if (command === "use") {
-    if (payload.mode === "multi_library") {
-      console.log(`Task: ${payload.task}`);
-      if (!Array.isArray(payload.recommendations) || payload.recommendations.length === 0) {
-        console.log("No callable recommendations found.");
-        return;
-      }
-      for (const recommendation of payload.recommendations) {
-        console.log(
-          `${recommendation.rank}. ${recommendation.library} -> ${recommendation.fq_name} [${recommendation.confidence}]`
-        );
-        if (recommendation.signature) {
-          console.log(`  signature: ${recommendation.signature}`);
-        }
-        console.log(`  why: ${recommendation.why}`);
-        console.log(`  cite: ${recommendation.citation_id}`);
-      }
-      return;
-    }
-    if (payload.mode === "federated_docs") {
-      console.log(`Task: ${payload.task} [${payload.confidence}]`);
-      if (!Array.isArray(payload.steps) || payload.steps.length === 0) {
-        console.log("No citation-backed steps found.");
-        return;
-      }
-      for (const step of payload.steps) {
-        console.log(`${step.id} (${step.library}@${step.version}). ${step.instruction}`);
-        console.log(`  cite: ${step.citations.join(", ")}`);
-      }
-      return;
-    }
-
-    console.log(`${payload.library}@${payload.version} :: ${payload.task} [${payload.confidence}]`);
-    if (payload.steps.length === 0) {
-      console.log("No citation-backed steps found for this task.");
-      return;
-    }
-    for (const step of payload.steps) {
-      const confidence = typeof step.confidence === "number" ? ` [confidence: ${step.confidence}]` : "";
-      console.log(`${step.id}${confidence}. ${step.instruction}`);
-      if (step.command) {
-        console.log(`  command: ${step.command}`);
-      }
-      if (step.prerequisites) {
-        console.log(`  prerequisites: ${step.prerequisites}`);
-      }
-      if (step.expected) {
-        console.log(`  expected: ${step.expected}`);
-      }
-      console.log(`  cite: ${step.citations.join(", ")}`);
-    }
-    if (payload.snippet) {
-      console.log("\nSnippet:\n");
-      console.log(payload.snippet);
-    }
-    if (Array.isArray(payload.related_docs) && payload.related_docs.length > 0) {
-      console.log(`\nRelated docs: ${payload.related_docs.join(", ")}`);
-    }
+  if (command === "trail") {
+    console.log(`Trail: ${payload.trail_id}`);
+    console.log(`Objective: ${payload.objective}`);
+    console.log(`Visited refs: ${(payload.visited_refs || []).length}`);
+    console.log(`Pinned evidence: ${(payload.pinned_evidence || []).length}`);
+    console.log(`Coverage tags: ${(payload.coverage_tags || []).length}`);
   }
 }
 
@@ -326,8 +311,16 @@ async function main() {
       payload = await runSurface(effectivePositionals, effectiveFlags);
     } else if (command === "fn") {
       payload = await runFn(effectivePositionals, effectiveFlags);
+    } else if (command === "find") {
+      payload = runFind(effectivePositionals, effectiveFlags);
     } else if (command === "search") {
       payload = runSearch(effectivePositionals, effectiveFlags);
+    } else if (command === "expand") {
+      payload = runExpand(effectivePositionals, effectiveFlags);
+    } else if (command === "neighbors") {
+      payload = runNeighbors(effectivePositionals, effectiveFlags);
+    } else if (command === "extract") {
+      payload = runExtract(effectivePositionals, effectiveFlags);
     } else if (command === "list") {
       payload = runList(effectiveFlags);
     } else if (command === "stats") {
@@ -336,8 +329,8 @@ async function main() {
       payload = runOpen(effectivePositionals, effectiveFlags);
     } else if (command === "cite") {
       payload = runCite(effectivePositionals, effectiveFlags);
-    } else if (command === "use") {
-      payload = await runUse(effectivePositionals, effectiveFlags);
+    } else if (command === "trail") {
+      payload = runTrail(effectivePositionals, effectiveFlags);
     } else {
       throw new CliError(
         EXIT_CODES.INVALID_ARGS,

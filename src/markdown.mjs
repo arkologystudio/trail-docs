@@ -78,6 +78,10 @@ export function parseMarkdownDocument(relativePath, content) {
     const lineEnd = nextHeading ? nextHeading.line - 1 : lines.length;
     const sectionLines = lines.slice(lineStart - 1, lineEnd);
     const bodyLines = sectionLines.slice(1);
+    const bodyLineRecords = bodyLines.map((line, offset) => ({
+      line: lineStart + offset + 1,
+      text: line
+    }));
     const baseAnchor = normalizeAnchor(currentHeading.heading);
     const duplicateCount = anchorCounts.get(baseAnchor) || 0;
     anchorCounts.set(baseAnchor, duplicateCount + 1);
@@ -95,7 +99,8 @@ export function parseMarkdownDocument(relativePath, content) {
       line_end: lineEnd,
       text,
       snippet: truncate(text || currentHeading.heading, 220),
-      code_blocks: codeBlocks
+      code_blocks: codeBlocks,
+      _body_lines: bodyLineRecords
     });
   }
 

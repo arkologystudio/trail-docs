@@ -4,15 +4,21 @@ import { CliError } from "./errors.mjs";
 import { EXIT_CODES, TOOL_VERSION } from "./constants.mjs";
 import { ensureDirForFile, hashText, projectRelativePath, walkMarkdownFiles } from "./utils.mjs";
 import { parseMarkdownDocument } from "./markdown.mjs";
+import { buildAnchorGraph, extractEvidenceUnits } from "./evidence.mjs";
 
 function validateIndex(index) {
   if (!index || typeof index !== "object") {
     return false;
   }
-  if (!Array.isArray(index.docs) || !Array.isArray(index.sections)) {
+  if (
+    !Array.isArray(index.docs) ||
+    !Array.isArray(index.sections) ||
+    !Array.isArray(index.evidence_units) ||
+    !Array.isArray(index.anchor_graph)
+  ) {
     return false;
   }
-  return typeof index.schema_version === "string";
+  return index.schema_version === "2";
 }
 
 function readSourceManifest(sourceManifestPath = "") {
@@ -60,6 +66,7 @@ export function buildIndex({ srcDir, outFile, library, version, sourceManifestPa
 
   const docs = [];
   const sections = [];
+  const rawSections = [];
   const sourceHashes = [];
 
   for (const filePath of files) {
@@ -74,8 +81,20 @@ export function buildIndex({ srcDir, outFile, library, version, sourceManifestPa
     });
 
     for (const section of parsed.sections) {
-      sections.push({
+      rawSections.push({
         ...section,
+        source_path: sourcePath
+      });
+      sections.push({
+        section_id: section.section_id,
+        doc_id: section.doc_id,
+        anchor: section.anchor,
+        heading: section.heading,
+        line_start: section.line_start,
+        line_end: section.line_end,
+        text: section.text,
+        snippet: section.snippet,
+        code_blocks: section.code_blocks,
         source_path: sourcePath
       });
     }
@@ -95,10 +114,20 @@ export function buildIndex({ srcDir, outFile, library, version, sourceManifestPa
   });
   sourceHashes.sort((left, right) => left.localeCompare(right));
 
+  const evidenceUnits = extractEvidenceUnits({
+    library,
+    version,
+    sections: rawSections
+  });
+  const anchorGraph = buildAnchorGraph({
+    sections: rawSections,
+    evidenceUnits
+  });
+
   const sourceHash = `sha256:${hashText(sourceHashes.join("\n"))}`;
   const sourceManifest = readSourceManifest(sourceManifestPath);
   const index = {
-    schema_version: "1",
+    schema_version: "2",
     library,
     version,
     build: {
@@ -107,7 +136,9 @@ export function buildIndex({ srcDir, outFile, library, version, sourceManifestPa
       source_hash: sourceHash
     },
     docs,
-    sections
+    sections,
+    evidence_units: evidenceUnits,
+    anchor_graph: anchorGraph
   };
   if (buildContext && typeof buildContext === "object") {
     const inferred = Boolean(buildContext.inferred);

@@ -4,10 +4,11 @@
 
 _Built & maintained by [Arkology Studio](https://arkology.studio)_
 
-`trail-docs` turns markdown docs into a searchable, citation-backed knowledge base. It gives agents a faster trail through your documentation than reading every file or grepping in the dark.
+`trail-docs` turns markdown docs into a deterministic, citation-backed navigation index. It gives agents a faster trail through your documentation than reading every file or grepping in the dark.
 
-Built *for* agents. Usable by humans. No LLM required.
+Built *for* agents. Usable by humans. No LLM required in retrieval.
 
+> 📈 **Benchmark Snapshot (full-2026-03-10T09-22-28-301Z):** `trail-docs` used **83.0% fewer tokens than Context7** and **52.7% fewer tokens than grep**, with **+0.1517 comprehension vs grep** (+18.4% relative) and **+0.4084 vs Context7**.
 
 ```bash
 npm install -g trail-docs
@@ -19,64 +20,60 @@ npm install -g trail-docs
 
 AI agents navigating software libraries typically do one of two things:
 
-1. **Read everything** — dump 30 files into context, burn tokens, hope for the best.
-2. **Grep and pray** — `rg "configureSSL" --type js` returns 14 lines across 6 files. Good luck figuring out the order and what's actually relevant.
+1. **Read everything** — dump many files into context, burn tokens, hope for the best.
+2. **Grep and pray** — `rg "configureSSL" --type ts` returns fragments across files. Good luck reconstructing intent and sequence.
 
-Trail Docs offers a third path: **build an index once, query it many times.**
+Trail Docs offers a third path: **build an index once, navigate evidence units under strict budgets.**
 
 ### Grep vs Trail Docs
 
 ```bash
-# Grep: "here are some lines that match"
-$ rg "configure SSL" ./docs
-docs/security.md:12:  To configure SSL, first generate a certificate...
-docs/deployment.md:45:  SSL is configured via the server options...
-docs/cli-reference.md:89:  --secure  Enable SSL (requires configure SSL step)
-docs/changelog.md:201:  v2.1: Fixed configure SSL regression
-docs/troubleshooting.md:34:  If configure SSL fails, check permissions...
-# 5 files, 5 fragments, no structure, no sequence, no context.
-# Agent now has to open each file and read surrounding lines.
+# Grep: "here are some matching lines"
+$ rg "refresh token" ./docs
+./docs/auth/oauth.md:5:To use refresh tokens, send a POST request...
+./docs/auth/oauth.md:9:grant_type=refresh_token
+./docs/troubleshooting.md:42:refresh token expired
+# Fragments across files. Agent must reconstruct context.
 ```
 
 ```bash
-# Trail Docs: "here's what the docs say about that, with citations"
-$ trail-docs use "MyProject" "How do I configure SSL?" --json
+# Trail Docs v2: deterministic multi-hop retrieval with citations
+$ trail-docs find "How do I use refresh tokens?" \
+  --index .trail-docs/index.json --budget 350 --max-items 6 --json
+
+$ trail-docs extract "How do I use refresh tokens?" \
+  --from "auth/oauth#refresh-token,auth/oauth#token-endpoint" \
+  --index .trail-docs/index.json --budget 700 --max-items 8 --json
 {
-  "task": "How do I configure SSL?",
-  "results": [
+  "query": "How do I use refresh tokens?",
+  "items": [
     {
-      "instruction": "Generate a TLS certificate using the built-in CLI...",
-      "confidence": 0.95,
-      "command": "my-project cert generate --out ./certs",
-      "citations": ["MyProject@2.4.1:docs/security#ssl-setup:10-30"]
-    },
-    {
-      "instruction": "Enable TLS in your server configuration...",
-      "confidence": 0.82,
-      "command": "my-project serve --secure --cert ./certs/server.pem",
-      "citations": ["MyProject@2.4.1:docs/deployment#tls:42-55"]
+      "ref": "auth/oauth#refresh-token",
+      "type": "step",
+      "text": "Send POST /oauth/token with grant_type=refresh_token and refresh_token.",
+      "citation_id": "MyProject@1.0.0:auth/oauth#refresh-token:7-11"
     }
-  ]
+  ],
+  "budget_tokens": 700,
+  "spent_tokens": 124,
+  "remaining_tokens": 576
 }
-# Structured results. Exact file + line citations. Code examples extracted.
-# Agent can act on this immediately.
+# Structured evidence. Exact line-level citation IDs. Budget-aware output.
 ```
 
-**Grep gives you fragments. Trail Docs gives you cited, structured results.**
+**Grep gives you fragments. Trail Docs gives you bounded, cited evidence units.**
 
-They're different tools. Grep answers "where is this string?" Trail Docs answers "what do the docs say about this topic?" Agents need both — but only had good tooling for the first one.
+They are different tools. Grep answers "where is this string?" Trail Docs answers "what evidence should the agent read next?"
 
 ### How it works under the hood
 
-Trail Docs is **purely algorithmic**. No LLM in the retrieval loop. No vector embeddings. No magic.
+Trail Docs retrieval is **purely algorithmic**.
 
-- **Indexing:** Parses markdown into sections (by heading), extracts code blocks, normalizes text, stores everything in a flat JSON index.
-- **Search:** Tokenizes your query, counts keyword frequency against each section. Headings weighted 2x. Intent detection (action? debugging? release?) reranks results.
-- **Results:** Ordered by relevance score, not by logical sequence. Each result includes the section's text, extracted code/commands, and exact file + line range citations.
+- **Indexing:** parses markdown into docs + sections, extracts deterministic `evidence_units[]`, and builds `anchor_graph[]` links.
+- **Ranking:** lexical/heading/symbol/action scoring with deterministic tie-breakers and token-cost penalties.
+- **Selection:** hard token budgets, duplicate suppression, stable ordering, explicit citations.
 
-This means: results are **deterministic and fast**, but they're ranked by keyword relevance, not by an LLM's understanding of logical order. The "steps" are really "most relevant sections, structured and cited." That's the honest trade-off — you get speed, reproducibility, and zero external dependencies, but not the reasoning of a language model.
-
-For most agent workflows, this is the right trade-off. The agent already has an LLM — it just needs the *right documentation* fed to it efficiently.
+This means retrieval is reproducible and fast. Agents own reasoning; Trail Docs owns navigation and evidence packing.
 
 ---
 
@@ -84,84 +81,88 @@ For most agent workflows, this is the right trade-off. The agent already has an 
 
 ### 🥾 Trail 1: Local docs (your own project)
 
-Index your project's markdown docs and query them:
+Index your docs and run the v2 navigation flow:
 
 ```bash
-# Build the index
+# Build index
 trail-docs build --src . --library "MyProject" --version "1.0.0" \
   --out .trail-docs/index.json
 
-# Create the manifest
-echo '{"schema_version":"1","library":"MyProject","library_version":"1.0.0","index_path":"index.json"}' \
-  > .trail-docs/trail-docs.json
+# Hop 1: find start refs
+trail-docs find "How do I deploy to production?" \
+  --index .trail-docs/index.json --budget 400 --max-items 6 --json
 
-# Ask a question
-trail-docs use "MyProject" "How do I deploy to production?" --path .trail-docs
+# Hop 2: inspect one anchor and neighbors
+trail-docs expand "deploy/runbook#production" \
+  --index .trail-docs/index.json --budget 300 --max-items 5 --json
+trail-docs neighbors "deploy/runbook#production" \
+  --index .trail-docs/index.json --json
+
+# Hop 3: extract final evidence from explicit refs
+trail-docs extract "How do I deploy to production?" \
+  --from "deploy/runbook#production,deploy/checklist#preflight" \
+  --index .trail-docs/index.json --budget 800 --max-items 8 --json
 ```
 
 ### 🔭 Trail 2: Pre-install research (unknown library)
 
-Evaluate a library's docs and API surface *before* installing it:
+Evaluate a library's docs and API surface before adopting it:
 
 ```bash
 # Discover candidates
 trail-docs discover "axios" --provider npm --max-results 5 --json
 
-# Fetch docs snapshot with pinned source ref
+# Fetch docs snapshot with pinned source metadata
 trail-docs fetch "npm:axios" --json
 
-# Build index from fetched docs
-trail-docs build \
-  --src .trail-docs/cache/sources/<snapshot>/docs \
-  --library "axios" \
-  --version "1.13.6" \
-  --source-manifest .trail-docs/cache/sources/<snapshot>/.trail-docs/source.json \
-  --out .trail-docs/index.json
-
-# Or do it all in one shot:
+# One-shot discover -> fetch -> build -> manifest
 trail-docs prep "axios" --path .trail-docs --json
 
-# One-shot URL ingestion:
+# One-shot URL ingestion
 trail-docs index "https://raw.githubusercontent.com/axios/axios/v1.x/README.md" \
   --path .trail-docs --json
 ```
 
 ### 🗺️ Trail 3: API surface + callable guidance
 
-Understand a library's shape without reading its source:
+Understand a library's shape without manually reading source files:
 
 ```bash
 # Extract exported API + signatures
 trail-docs surface npm:openai --json
 
-# Look up a specific callable
-trail-docs fn "npm:openai#OpenAI.complete" --json
+# Resolve one callable/type
+trail-docs fn "npm:openai#OpenAI.responses.create" --json
 
-# Route a task across multiple candidate libraries
-trail-docs use "extract structured data from text" --libs npm:openai,npm:transformers --json
+# Keep trail state as you investigate
+trail-docs trail create --objective "evaluate auth + retries" --json
+trail-docs trail add --trail trail_xxxxx --ref "api/auth#authentication" --index .trail-docs/index.json --json
+trail-docs trail show --trail trail_xxxxx --json
 ```
 
 ---
 
 ## Commands
 
-
-| Command          | What it does                                               |
-| ---------------- | ---------------------------------------------------------- |
-| `bootstrap`      | Generate markdown from codebase and build index            |
-| `build`          | Build deterministic index from markdown                    |
-| `list`           | List indexed documents                                     |
-| `stats`          | Index metadata and coverage                                |
-| `discover`       | Find external libraries/docs candidates                    |
-| `fetch`          | Fetch docs snapshot with pinned source metadata            |
-| `prep` / `index` | One-shot discover → fetch → build → manifest               |
-| `surface`        | Extract library API exports, symbols, signatures           |
-| `fn`             | Resolve one callable/type with signature-level citations   |
-| `search`         | Lexical section search                                     |
-| `open`           | Open section content                                       |
-| `cite`           | Emit canonical citation                                    |
-| `use`            | Task-based retrieval with structured results and citations |
-
+| Command | What it does |
+| --- | --- |
+| `bootstrap` | Generate markdown from codebase and build index |
+| `build` | Build deterministic index from markdown |
+| `list` | List indexed documents |
+| `stats` | Index metadata and coverage |
+| `discover` | Find external libraries/docs candidates |
+| `fetch` | Fetch docs snapshot with pinned source metadata |
+| `prep` / `index` | One-shot discover/fetch/build flow |
+| `surface` | Extract exports, symbols, signatures |
+| `fn` | Resolve callable/type with signature-level citations |
+| `find` | Hop-1 retrieval: ranked start refs + top evidence units |
+| `search` | Alias of `find` |
+| `expand` | Hop-2 retrieval for one ref under token cap |
+| `neighbors` | Graph neighbors (`heading_adjacent`, `intra_doc_link`, overlaps) |
+| `extract` | Hop-3 query-conditioned evidence from explicit refs |
+| `open` | Strict retrieval utility (`--mode units` default, or `--mode section`) |
+| `cite` | Emit canonical citation details |
+| `trail` | Persistent notebook state in `.trail-docs/trails/*.json` |
 
 All commands support `--json` for agent-friendly output.
 
@@ -169,18 +170,19 @@ All commands support `--json` for agent-friendly output.
 
 ## Agent Integration
 
-Trail Docs is designed to slot into any agent workflow that can run shell commands. No MCP server, no protocol negotiation — just a CLI and JSON responses.
+Trail Docs is designed to drop into agent workflows that can run shell commands.
 
-**Why CLI over MCP?** Agents already know CLIs. Every major agent framework — Claude Code, Cursor, Aider, OpenHands — can run shell commands out of the box. CLI is the lowest common denominator. Zero infrastructure, maximum compatibility.
+**Why CLI over MCP for this tool?** It works immediately with most coding agents and automation environments: no protocol server required for core retrieval.
 
 ```bash
-# Agent's typical workflow:
-trail-docs prep "some-library" --path .trail-docs --json   # research
-trail-docs use "some-library" "How do I authenticate?" --json  # query
-trail-docs fn "npm:some-library#Client.auth" --json            # drill down
+# Typical agent retrieval loop
+trail-docs prep "some-library" --path .trail-docs --json
+trail-docs find "How do I authenticate?" --index .trail-docs/index.json --budget 350 --max-items 6 --json
+trail-docs extract "How do I authenticate?" --from "auth#overview,auth#token-refresh" \
+  --index .trail-docs/index.json --budget 900 --max-items 8 --json
 ```
 
-The `--json` flag is the key. Every command returns structured, parseable output that agents can consume directly. No screen-scraping, no output parsing heuristics.
+The `--json` flag is key: deterministic, parseable payloads without terminal scraping.
 
 ---
 
@@ -207,35 +209,37 @@ Run `trail-docs --help` for full flags.
 
 ## JSON Output
 
-Example (`use`):
+Example (`extract`):
 
 ```json
 {
-  "task": "How do I configure SSL?",
   "library": "MyProject",
   "version": "1.0.0",
-  "confidence": "authoritative",
-  "steps": [
+  "query": "How do I configure SSL?",
+  "refs": ["docs/security#ssl-setup"],
+  "items": [
     {
-      "id": "step_1",
-      "instruction": "...",
-      "confidence": 0.95,
-      "command": "...",
-      "citations": ["MyProject@1.0.0:docs/security#ssl:10-30"]
-    }
-  ],
-  "citations": ["MyProject@1.0.0:docs/security#ssl:10-30"],
-  "citation_details": [
-    {
-      "citation_id": "...",
-      "provenance": {
-        "source_type": "registry",
-        "provider": "npm",
-        "canonical_url": "https://...",
-        "resolved_ref": "1.13.6"
+      "ref": "docs/security#ssl-setup",
+      "unit_id": "unit_abc123",
+      "type": "step",
+      "text": "Enable TLS and point to cert + key paths.",
+      "citation_id": "MyProject@1.0.0:docs/security#ssl-setup:10-30",
+      "token_estimate": 22,
+      "why_matched": ["token:ssl", "command:type"],
+      "score": 0.8125,
+      "score_components": {
+        "lexical": 0.9,
+        "heading_boost": 0.4,
+        "symbol_boost": 0,
+        "command_boost": 1,
+        "novelty_penalty": 0,
+        "token_cost_penalty": 0.18
       }
     }
-  ]
+  ],
+  "budget_tokens": 700,
+  "spent_tokens": 142,
+  "remaining_tokens": 558
 }
 ```
 
@@ -243,9 +247,35 @@ Full schema: [docs/json_output_schema.md](./docs/json_output_schema.md)
 
 ---
 
+## 📊 Benchmark Snapshot
+
+Latest comparable run:
+
+- `full-2026-03-10T09-22-28-301Z` (CI corpus set)
+- Same question set + judge across `trail-docs`, `grep`, `context7`
+
+| Tool | Mean Comprehension | Mean Tokens | Mean Latency |
+| --- | ---: | ---: | ---: |
+| `trail-docs` | **0.9767** | **418.33** | 6596.97 ms |
+| `grep` | 0.8250 | 884.00 | **3696.50 ms** |
+| `context7` | 0.5683 | 2466.33 | 9983.95 ms |
+
+Pairwise (`trail-docs` vs `grep`):
+
+- Comprehension: `+0.1517`
+- Tokens: `-465.67`
+- Latency: `+2900.47ms`
+
+Artifacts:
+
+- `eval/results/full-2026-03-10T09-22-28-301Z.summary.json`
+- `eval/results/full-2026-03-10T09-22-28-301Z.report.md`
+
+---
+
 ## Safety Model for External Docs
 
-Fetched documentation is treated as **untrusted input**. Always.
+Fetched documentation is treated as **untrusted input**.
 
 `fetch` supports policy controls via `trail-docs.policy.json`:
 
@@ -259,15 +289,16 @@ Fetched documentation is treated as **untrusted input**. Always.
 }
 ```
 
-The source manifest tracks: canonical URL, requested/resolved refs, integrity hash, fetch timestamp, and suspicious-pattern trust signals. No execution of fetched content, ever.
+Source manifests track canonical URL, requested/resolved refs, integrity hash, fetch timestamp, and trust signals.
 
 ---
 
 ## Performance
 
-- **Build once, query many.** The index is deterministic and cacheable.
-- **Use `--json`** for agent integrations — structured output, no parsing needed.
-- **Reuse cached snapshots** from `.trail-docs/cache/sources` for repeated external research.
+- **Build once, navigate many.** Indexes are deterministic and cacheable.
+- **Use `--budget` and `--max-items`** to hold context growth.
+- **Use `--json`** for automation-safe outputs.
+- **Reuse cached snapshots** in `.trail-docs/cache/sources` for repeated external research.
 
 ---
 
@@ -275,27 +306,28 @@ The source manifest tracks: canonical URL, requested/resolved refs, integrity ha
 
 ```bash
 npm test
+npm run eval:smoke:ci
 ```
 
-Covers: deterministic builds, retrieval commands, manifest resolution, bootstrap flows, discovery/fetch, and end-to-end pre-install research.
+Covers deterministic builds, retrieval commands, manifest resolution, bootstrap flows, discovery/fetch, and eval harness metrics.
 
 ---
 
 ## Documentation
 
-1. [Quick Start](./docs/trail-docs-quick-start.md)
-2. [Agent Integration](./docs/trail-docs-agent-integration.md)
-3. [Best Practices](./docs/trail-docs-best-practices.md)
+1. [Quick Start](./docs/quick-start.md)
+2. [Agent Integration](./docs/agent-integration.md)
+3. [Best Practices](./docs/best-practices.md)
 4. [JSON Output Schema](./docs/json_output_schema.md)
-5. [V1 Publishing Plan](./docs/v1_publishing_plan.md)
+5. [Navigation-First Refactor Notes](./docs/navigation-first-refactor.md)
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). The codebase is intentionally simple — Node 20+, minimal dependencies, fun to hack on.
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-trail-docs was shaped by agent feedback from the start — agents installed it, broke it, requested features, and other agents built those features. If you're an agent (or a human), we'd love your contributions and feedback. Open an issue, submit a PR, or just tell us what's missing.
+Trail Docs was shaped by agent feedback from the start: agents installed it, broke it, requested features, and other agents built those features. If you're an agent (or a human), we'd love contributions and feedback.
 
 ---
 
